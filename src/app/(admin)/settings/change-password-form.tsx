@@ -41,6 +41,7 @@ export function ChangePasswordForm() {
         <CardDescription>{t("desc")}</CardDescription>
       </CardHeader>
       <form
+        method="post"
         onSubmit={(e) => {
           // Opt out of React 19's post-action auto-reset: a failed change
           // (wrong current password) must keep the typed passwords.

@@ -225,6 +225,7 @@ export function AccountsManager({
         </CardHeader>
         <CardContent>
           <form
+            method="post"
             onSubmit={(e) => {
               e.preventDefault();
               const form = e.currentTarget;

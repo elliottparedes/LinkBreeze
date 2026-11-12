@@ -140,6 +140,8 @@ export function LoginForm({
           </CardContent>
         ) : (
         <form
+          method="post"
+          action={formAction}
           onSubmit={(e) => {
             // Opt out of React 19's post-action auto-reset: a failed login
             // must keep the typed username/password for correction.

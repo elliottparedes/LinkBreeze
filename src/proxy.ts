@@ -74,6 +74,18 @@ const ADMIN_RESERVED = new Set([
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Accidental GET form submits (JS not hydrated / Server Actions blocked)
+  // put passwords in the query string. Strip them with a redirect so the
+  // credential never sticks in the address bar — and pair with log
+  // redaction in instrumentation so the first request line is scrubbed too.
+  if (request.nextUrl.search) {
+    const { stripSensitiveSearchParams } = await import("@/lib/redact-secrets");
+    const cleaned = request.nextUrl.clone();
+    if (stripSensitiveSearchParams(cleaned.searchParams)) {
+      return NextResponse.redirect(cleaned);
+    }
+  }
+
   // ── 1. i18n: forward the admin UI locale as a request header ────────────
   // The lb_locale cookie is the source of truth (set from Settings). The
   // admin layout/server components read x-lb-locale via headers(); public

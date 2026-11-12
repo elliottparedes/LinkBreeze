@@ -23,6 +23,11 @@ export async function register() {
   // Only run in the Node.js runtime — skip the edge runtime entirely.
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // Scrub passwords / tokens from stdout before Next.js request logging
+  // (and anything else) can print them. Must run first.
+  const { installLogRedaction } = await import("@/lib/redact-secrets");
+  installLogRedaction();
+
   // ── 1. Ensure SECRET_KEY is set before anything touches auth ─────────
   await ensureSecretKey();
 

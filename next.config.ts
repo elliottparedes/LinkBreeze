@@ -89,6 +89,13 @@ const nextConfig: NextConfig = {
   // Don't leak "X-Powered-By: Next.js" in response headers.
   poweredByHeader: false,
 
+  // Dev server-action logs stringify arguments (FormData can include
+  // passwords). Keep request timing logs; scrub secrets via
+  // src/lib/redact-secrets.ts + never print action payloads.
+  logging: {
+    serverFunctions: false,
+  },
+
   // Force the Drizzle migration files (.sql + meta/_journal.json) to be bundled
   // into the standalone server output. They're read at runtime by the
   // auto-migrate step in src/instrumentation.ts; without this, file tracing may

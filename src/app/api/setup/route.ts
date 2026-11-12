@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getUserCount, getUserByUsername } from "@/server/queries";
+import { RESERVED_SLUGS } from "@/lib/link-slug";
+import {
+  getUserCount,
+  getUserByUsername,
+  createFirstUser,
+  getDefaultPage,
+  updatePage,
+  updateSetting,
+} from "@/server/queries";
 import { hashPassword, createSession } from "@/lib/auth";
-import { createFirstUser } from "@/server/queries";
 
 const setupSchema = z.object({
   username: z
@@ -58,6 +65,22 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
+
+    // Public page lives at /{username} by default (not the legacy /u seed).
+    const pageSlug = username.trim().toLowerCase();
+    if (
+      pageSlug &&
+      !RESERVED_SLUGS.includes(pageSlug as (typeof RESERVED_SLUGS)[number])
+    ) {
+      try {
+        const page = await getDefaultPage();
+        await updatePage(page.id, { slug: pageSlug });
+        await updateSetting("slug", pageSlug);
+      } catch (err) {
+        console.error("[setup-api] failed to set page slug from username:", err);
+      }
+    }
+
     await createSession(user.id, user.username);
 
     return NextResponse.json({ success: true });

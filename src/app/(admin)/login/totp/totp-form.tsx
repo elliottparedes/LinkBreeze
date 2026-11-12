@@ -58,6 +58,8 @@ export function TotpForm() {
             <CardDescription>{t("totpDesc")}</CardDescription>
           </CardHeader>
           <form
+            method="post"
+            action={formAction}
             onSubmit={(e) => {
               // Opt out of React 19's post-action auto-reset: a wrong code
               // must keep the typed value for correction.

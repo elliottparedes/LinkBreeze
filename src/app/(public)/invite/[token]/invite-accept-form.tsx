@@ -43,7 +43,7 @@ export function InviteAcceptForm({ token }: { token: string }) {
   };
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5">
+    <form method="post" onSubmit={onSubmit} className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5">
       <FormField label={en.invite.username} htmlFor="invite-username">
         <Input
           id="invite-username"

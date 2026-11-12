@@ -61,6 +61,7 @@ export function SetupWizard({
   // the wizard can advance to step 2.
   const [credPending, setCredPending] = React.useState(false);
   const [credError, setCredError] = React.useState<string | null>(null);
+  const [createdUsername, setCreatedUsername] = React.useState(defaultUsername);
 
   const handleCredSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -68,16 +69,18 @@ export function SetupWizard({
     setCredError(null);
     try {
       const form = e.currentTarget;
+      const username = (form.username as HTMLInputElement).value;
       const res = await fetch("/api/setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: (form.username as HTMLInputElement).value,
+          username,
           password: (form.password as HTMLInputElement).value,
         }),
       });
       const data = await res.json();
       if (data.success) {
+        setCreatedUsername(username.trim());
         setStep("profile");
       } else {
         setCredError(data.error);
@@ -223,7 +226,7 @@ export function SetupWizard({
               <CardTitle className="text-base">{t("createAdminTitle")}</CardTitle>
               <p className="text-sm text-muted-foreground">{t("thisIsTheOnlyAccount")}</p>
             </CardHeader>
-            <form onSubmit={handleCredSubmit}>
+            <form method="post" onSubmit={handleCredSubmit}>
               <CardContent className="flex flex-col gap-4">
                 <FormField label={t("username")} htmlFor="username" required>
                   <Input
@@ -286,7 +289,7 @@ export function SetupWizard({
                 {t("profileStepNote")}
               </p>
             </CardHeader>
-            <form onSubmit={handleProfileSubmit}>
+            <form method="post" onSubmit={handleProfileSubmit}>
               <CardContent className="flex flex-col gap-4">
                 <FormField label={t("displayName")} htmlFor="displayName" required>
                   <Input
@@ -319,6 +322,8 @@ export function SetupWizard({
                     name="slug"
                     type="text"
                     placeholder="jane-doe"
+                    defaultValue={createdUsername.toLowerCase()}
+                    key={createdUsername}
                     required
                     // Single backslash: JSX delivers it raw, and v-mode HTML
                     // pattern regexes require the dash escaped (a bare or
