@@ -40,6 +40,7 @@ const fr: Messages = {
     primary: "Principal",
     accounts: "Comptes",
     audit: "Audit",
+    ops: "Ops",
   },
 
   shell: {
@@ -78,6 +79,18 @@ const fr: Messages = {
     totpTrust: "Faire confiance à cet appareil pendant 30 jours",
     totpInvalid: "Code d'authentification invalide.",
     totpExpired: "Cette tentative de connexion a expiré. Veuillez vous reconnecter.",
+  },
+
+  signup: {
+    title: "Créer votre page",
+    subtitle: "Choisissez un nom d'utilisateur. Votre page publique l'utilisera.",
+    username: "Nom d'utilisateur",
+    password: "Mot de passe",
+    passwordHint: "Au moins 8 caractères avec majuscule, minuscule et un chiffre.",
+    submit: "Créer le compte",
+    submitPending: "Création du compte…",
+    signIn: "Déjà un compte ? Se connecter",
+    createAccount: "Créer un compte",
   },
 
   setup: {
@@ -1216,6 +1229,8 @@ const fr: Messages = {
     setupCompleted: "L'installation a déjà été effectuée",
     setupFailed: "Une erreur est survenue pendant l'installation. Veuillez réessayer.",
     usernameTaken: "Ce nom d'utilisateur est déjà pris",
+    usernameReserved: "Ce nom d'utilisateur est réservé",
+    signupClosed: "L'inscription n'est pas ouverte sur cette instance",
     pageDeleteFailed: "Une erreur est survenue lors de la suppression de la page. Veuillez réessayer.",
     slugExists: "Une page avec ce slug existe déjà",
     defaultPageProtected: "La page par défaut ne peut pas être supprimée",
@@ -1286,6 +1301,30 @@ const fr: Messages = {
 
   // ─── Domaines personnalisés (#85) ──────────────────────────────────────
   // ─── Accounts (#124) ───────────────────────────────────────────────────
+  ops: {
+    title: "Ops",
+    description: "Ce que fait cette instance en ce moment. Réservé aux opérateurs.",
+    sectionProcess: "Ce processus",
+    sectionPeople: "Personnes",
+    version: "Version",
+    uptime: "Disponibilité",
+    memoryUsed: "Mémoire de l'app",
+    heapUsed: "Tas JavaScript",
+    memoryFree: "Mémoire libre",
+    memoryTotal: "Mémoire totale",
+    dbSize: "Taille de la base",
+    accounts: "Comptes",
+    active: "Actifs",
+    disabled: "Désactivés",
+    signupsDay: "Inscriptions, dernier jour",
+    signupsWeek: "Inscriptions, 7 derniers jours",
+    signupsMonth: "Inscriptions, 30 derniers jours",
+    pages: "Pages",
+    links: "Liens",
+    recentSignups: "Dernières inscriptions",
+    noSignups: "Aucun compte pour l'instant.",
+  },
+
   audit: {
     title: "Journal d'audit",
     description: "Événements de sécurité : comptes, rôles, connexions, changements de paramètres.",
@@ -1392,6 +1431,10 @@ const fr: Messages = {
     pagePolicyDescription: "Si un nouveau compte reçoit automatiquement sa propre page publique, ou si un admin les crée manuellement.",
     policyPerUser: "Chaque compte reçoit sa propre page",
     policyManual: "Les pages sont créées manuellement",
+    publicSignupTitle: "Inscription publique",
+    publicSignupDescription: "Si activé, n'importe qui peut créer un compte membre et sa page. Désactivé par défaut.",
+    publicSignupOn: "Tout le monde peut s'inscrire",
+    publicSignupOff: "Inscription sur invitation ou par un admin",
     rolesTitle: "Rôles",
     rolesDescription: "Ce que chaque rôle peut faire sur cette instance. Le rôle Admin conserve toujours le contrôle total.",
     roleNew: "Nouveau rôle",

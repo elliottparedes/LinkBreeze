@@ -40,6 +40,7 @@ const ptBR: Messages = {
     primary: "Principal",
     accounts: "Contas",
     audit: "Auditoria",
+    ops: "Operação",
   },
 
   shell: {
@@ -78,6 +79,18 @@ const ptBR: Messages = {
     totpTrust: "Confiar neste dispositivo por 30 dias",
     totpInvalid: "Código de autenticação inválido.",
     totpExpired: "Esta tentativa de login expirou. Por favor, entre novamente.",
+  },
+
+  signup: {
+    title: "Crie sua página",
+    subtitle: "Escolha um nome de usuário. Sua página pública vai usá-lo.",
+    username: "Nome de usuário",
+    password: "Senha",
+    passwordHint: "Pelo menos 8 caracteres com maiúscula, minúscula e um número.",
+    submit: "Criar conta",
+    submitPending: "Criando conta…",
+    signIn: "Já tem uma conta? Entrar",
+    createAccount: "Criar uma conta",
   },
 
   setup: {
@@ -1053,6 +1066,8 @@ const ptBR: Messages = {
     setupCompleted: "A configuração inicial já foi concluída",
     setupFailed: "Algo deu errado durante a configuração. Por favor, tente novamente.",
     usernameTaken: "Nome de usuário já está em uso",
+    usernameReserved: "Este nome de usuário é reservado",
+    signupClosed: "O cadastro não está aberto nesta instância",
     pageDeleteFailed: "Algo deu errado ao excluir a página. Por favor, tente novamente.",
     slugExists: "Já existe uma página com este slug",
     defaultPageProtected: "A página padrão não pode ser excluída",
@@ -1123,6 +1138,30 @@ const ptBR: Messages = {
 
   // ─── Domínios personalizados (#85) ─────────────────────────────────────
   // ─── Accounts (#124) ───────────────────────────────────────────────────
+  ops: {
+    title: "Operação",
+    description: "O que esta instância está fazendo agora. Só operadores veem isto.",
+    sectionProcess: "Este processo",
+    sectionPeople: "Pessoas",
+    version: "Versão",
+    uptime: "Tempo no ar",
+    memoryUsed: "Memória do app",
+    heapUsed: "Heap JavaScript",
+    memoryFree: "Memória livre",
+    memoryTotal: "Memória total",
+    dbSize: "Tamanho do banco",
+    accounts: "Contas",
+    active: "Ativas",
+    disabled: "Desativadas",
+    signupsDay: "Cadastros, último dia",
+    signupsWeek: "Cadastros, últimos 7 dias",
+    signupsMonth: "Cadastros, últimos 30 dias",
+    pages: "Páginas",
+    links: "Links",
+    recentSignups: "Cadastros recentes",
+    noSignups: "Nenhuma conta ainda.",
+  },
+
   audit: {
     title: "Registro de auditoria",
     description: "Eventos de segurança: contas, funções, logins e alterações de configuração.",
@@ -1229,6 +1268,10 @@ const ptBR: Messages = {
     pagePolicyDescription: "Se uma nova conta recebe automaticamente sua própria página pública ou se um admin as cria manualmente.",
     policyPerUser: "Cada conta recebe sua própria página",
     policyManual: "As páginas são criadas manualmente",
+    publicSignupTitle: "Cadastro público",
+    publicSignupDescription: "Quando ligado, qualquer pessoa pode criar uma conta de membro e a própria página. Desligado por padrão.",
+    publicSignupOn: "Qualquer pessoa pode se cadastrar",
+    publicSignupOff: "Cadastro só por convite ou por um admin",
     rolesTitle: "Funções",
     rolesDescription: "O que cada função pode fazer nesta instância. A função Admin sempre mantém controle total.",
     roleNew: "Nova função",

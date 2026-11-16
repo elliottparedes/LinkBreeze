@@ -98,7 +98,7 @@ const nextConfig: NextConfig = {
 
   // Force the Drizzle migration files (.sql + meta/_journal.json) to be bundled
   // into the standalone server output. They're read at runtime by the
-  // auto-migrate step in src/instrumentation.ts; without this, file tracing may
+  // auto-migrate step in src/instrumentation-node.ts; without this, file tracing may
   // or may not include them, which would silently break migrations on fresh
   // deploys.
   outputFileTracingIncludes: {

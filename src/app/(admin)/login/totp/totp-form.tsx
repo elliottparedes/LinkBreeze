@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useActionState } from "react";
+import { startTransition, useActionState } from "react";
 import { verifyLoginTotp } from "@/server/actions/two-factor";
 import { LanguageDropdown } from "@/components/language-dropdown";
 import type { ActionResult } from "@/lib/errors";
@@ -58,13 +58,17 @@ export function TotpForm() {
             <CardDescription>{t("totpDesc")}</CardDescription>
           </CardHeader>
           <form
-            method="post"
             action={formAction}
             onSubmit={(e) => {
               // Opt out of React 19's post-action auto-reset: a wrong code
               // must keep the typed value for correction.
+              // The manual dispatch has to run inside a transition or
+              // useActionState warns and isPending never flips.
               e.preventDefault();
-              formAction(new FormData(e.currentTarget));
+              const data = new FormData(e.currentTarget);
+              startTransition(() => {
+                formAction(data);
+              });
             }}
           >
             <CardContent className="flex flex-col gap-4">

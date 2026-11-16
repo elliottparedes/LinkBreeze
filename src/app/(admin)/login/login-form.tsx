@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useActionState } from "react";
+import { startTransition, useActionState } from "react";
 import { login } from "@/server/actions/auth";
 import { startOidcLoginAction } from "@/server/actions/oidc";
 import { LanguageDropdown } from "@/components/language-dropdown";
@@ -40,11 +40,14 @@ function ssoErrorMessage(t: ReturnType<typeof useTranslations<"login">>, reason:
 export function LoginForm({
   ssoAvailable,
   ssoReplacesLocal,
+  signupEnabled,
 }: {
   ssoAvailable: boolean;
   ssoReplacesLocal: boolean;
+  signupEnabled: boolean;
 }) {
   const t = useTranslations("login");
+  const tSignup = useTranslations("signup");
   const router = useRouter();
   const searchParams = useSearchParams();
   // site-relative paths only - blocks "https://evil" and "//evil" open redirects
@@ -140,13 +143,17 @@ export function LoginForm({
           </CardContent>
         ) : (
         <form
-          method="post"
           action={formAction}
           onSubmit={(e) => {
             // Opt out of React 19's post-action auto-reset: a failed login
             // must keep the typed username/password for correction.
+            // The manual dispatch has to run inside a transition or
+            // useActionState warns and isPending never flips.
             e.preventDefault();
-            formAction(new FormData(e.currentTarget));
+            const data = new FormData(e.currentTarget);
+            startTransition(() => {
+              formAction(data);
+            });
           }}
         >
           <CardContent className="flex flex-col gap-4">
@@ -185,6 +192,14 @@ export function LoginForm({
             <Button type="submit" className="w-full" disabled={isPending}>
               {isPending ? t("submitPending") : t("submit")}
             </Button>
+            {signupEnabled ? (
+              <Link
+                href="/signup"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {tSignup("createAccount")}
+              </Link>
+            ) : null}
             <Link
               href="/"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"

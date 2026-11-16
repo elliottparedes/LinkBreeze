@@ -49,6 +49,7 @@ const en = {
     primary: "Primary",
     accounts: "Accounts",
     audit: "Audit log",
+    ops: "Ops",
   },
 
   shell: {
@@ -87,6 +88,18 @@ const en = {
     totpTrust: "Trust this device for 30 days",
     totpInvalid: "Invalid authentication code.",
     totpExpired: "This login attempt expired. Please sign in again.",
+  },
+
+  signup: {
+    title: "Create your page",
+    subtitle: "Pick a username. Your public page will use it.",
+    username: "Username",
+    password: "Password",
+    passwordHint: "At least 8 characters with upper, lower, and a digit.",
+    submit: "Create account",
+    submitPending: "Creating account…",
+    signIn: "Already have an account? Sign in",
+    createAccount: "Create an account",
   },
 
   setup: {
@@ -1221,6 +1234,8 @@ const en = {
     setupCompleted: "Setup has already been completed",
     setupFailed: "Something went wrong during setup. Please try again.",
     usernameTaken: "Username already taken",
+    usernameReserved: "This username is reserved",
+    signupClosed: "Sign-up is not open on this instance",
     pageDeleteFailed: "Something went wrong while deleting the page. Please try again.",
     slugExists: "A page with this slug already exists",
     defaultPageProtected: "The default page cannot be deleted",
@@ -1294,6 +1309,30 @@ const en = {
   },
 
   // ─── Accounts (#124) ───────────────────────────────────────────────────
+  ops: {
+    title: "Ops",
+    description: "What this instance is doing right now. Only instance operators can see this.",
+    sectionProcess: "This process",
+    sectionPeople: "People",
+    version: "Version",
+    uptime: "Uptime",
+    memoryUsed: "App memory",
+    heapUsed: "JavaScript heap",
+    memoryFree: "Free memory",
+    memoryTotal: "Total memory",
+    dbSize: "Database size",
+    accounts: "Accounts",
+    active: "Active",
+    disabled: "Disabled",
+    signupsDay: "Signups, last day",
+    signupsWeek: "Signups, last 7 days",
+    signupsMonth: "Signups, last 30 days",
+    pages: "Pages",
+    links: "Links",
+    recentSignups: "Latest signups",
+    noSignups: "No accounts yet.",
+  },
+
   audit: {
     title: "Audit log",
     description: "Security-relevant events: accounts, roles, sign-ins, settings changes.",
@@ -1403,6 +1442,10 @@ const en = {
     pagePolicyDescription: "Whether a new account automatically gets its own public page, or pages are created manually by an admin.",
     policyPerUser: "Each account gets its own page",
     policyManual: "Pages are created manually",
+    publicSignupTitle: "Public sign-up",
+    publicSignupDescription: "When this is on, anyone can create a member account and their own page. Off by default.",
+    publicSignupOn: "Anyone can sign up",
+    publicSignupOff: "Sign-up is invite or admin only",
     rolesTitle: "Roles",
     rolesDescription: "What each role may do on this instance. The Admin role always keeps full control.",
     roleNew: "New role",

@@ -57,6 +57,11 @@ export async function accountPagePolicy(): Promise<"per_user" | "manual"> {
   return v === "manual" ? "manual" : "per_user";
 }
 
+/** Public /signup. Off unless an instance admin explicitly sets "on". */
+export async function publicSignupEnabled(): Promise<boolean> {
+  return (await getSetting("publicSignup")) === "on";
+}
+
 /**
  * Strip account fields that must never be returned to the client.
  * `pageSlug` is the page this account owns (null when it owns none) — the
@@ -335,6 +340,22 @@ export async function setAccountPagePolicyAction(policy: "per_user" | "manual"):
   await updateSetting("accountPagePolicy", policy);
   await recordAudit("settings.updated", "accountPagePolicy", { policy });
   revalidatePath("/accounts");
+  return { success: true };
+}
+
+/**
+ * Open /signup to anyone. Default off. Instance-level → manageInstance.
+ */
+export async function setPublicSignupAction(value: "on" | "off"): Promise<ActionResult> {
+  if (demoGuard()) return unauthorizedError();
+  const denied = await requireInstanceAdmin();
+  if (denied) return denied;
+  if (value !== "on" && value !== "off") return validationError("Invalid setting");
+  await updateSetting("publicSignup", value);
+  await recordAudit("settings.updated", "publicSignup", { value });
+  revalidatePath("/accounts");
+  revalidatePath("/login");
+  revalidatePath("/signup");
   return { success: true };
 }
 

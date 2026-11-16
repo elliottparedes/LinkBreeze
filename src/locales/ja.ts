@@ -40,6 +40,7 @@ const ja: Messages = {
     primary: "プライマリ",
     accounts: "アカウント",
     audit: "監査ログ",
+    ops: "稼働状況",
   },
 
   shell: {
@@ -78,6 +79,18 @@ const ja: Messages = {
     totpTrust: "このデバイスを 30 日間信頼する",
     totpInvalid: "認証コードが正しくありません。",
     totpExpired: "このログイン試行は期限切れです。もう一度サインインしてください。",
+  },
+
+  signup: {
+    title: "ページを作成",
+    subtitle: "ユーザー名を選んでください。公開ページに使われます。",
+    username: "ユーザー名",
+    password: "パスワード",
+    passwordHint: "8文字以上で、大文字・小文字・数字を含めてください。",
+    submit: "アカウントを作成",
+    submitPending: "作成中…",
+    signIn: "アカウントをお持ちですか？ログイン",
+    createAccount: "アカウントを作成",
   },
 
   setup: {
@@ -1214,6 +1227,8 @@ const ja: Messages = {
     setupCompleted: "セットアップはすでに完了しています",
     setupFailed: "セットアップ中に問題が発生しました。もう一度お試しください。",
     usernameTaken: "このユーザー名はすでに使用されています",
+    usernameReserved: "このユーザー名は予約されています",
+    signupClosed: "このインスタンスでは新規登録は無効です",
     pageDeleteFailed: "ページの削除中に問題が発生しました。もう一度お試しください。",
     slugExists: "このスラッグのページはすでに存在します",
     defaultPageProtected: "デフォルトページは削除できません",
@@ -1288,6 +1303,30 @@ const ja: Messages = {
 
   // ─── カスタムドメイン (#85) ──────────────────────────────────────────────
   // ─── Accounts (#124) ───────────────────────────────────────────────────
+  ops: {
+    title: "稼働状況",
+    description: "このインスタンスの今の状態です。オペレーターだけが見られます。",
+    sectionProcess: "このプロセス",
+    sectionPeople: "ユーザー",
+    version: "バージョン",
+    uptime: "稼働時間",
+    memoryUsed: "アプリのメモリ",
+    heapUsed: "JavaScript ヒープ",
+    memoryFree: "空きメモリ",
+    memoryTotal: "合計メモリ",
+    dbSize: "データベースサイズ",
+    accounts: "アカウント",
+    active: "有効",
+    disabled: "無効",
+    signupsDay: "直近1日の登録",
+    signupsWeek: "直近7日の登録",
+    signupsMonth: "直近30日の登録",
+    pages: "ページ",
+    links: "リンク",
+    recentSignups: "最近の登録",
+    noSignups: "アカウントはまだありません。",
+  },
+
   audit: {
     title: "監査ログ",
     description: "セキュリティ関連イベント：アカウント、ロール、サインイン、設定変更。",
@@ -1394,6 +1433,10 @@ const ja: Messages = {
     pagePolicyDescription: "新アカウントが自動で固有の公開ページを取るか、管理者が手動で作成するかどうか。",
     policyPerUser: "各アカウントが固有のページを取得",
     policyManual: "ページは手動で作成",
+    publicSignupTitle: "公開サインアップ",
+    publicSignupDescription: "オンにすると、誰でもメンバーアカウントと自分のページを作成できます。初期状態はオフです。",
+    publicSignupOn: "誰でもサインアップできる",
+    publicSignupOff: "招待または管理者のみ",
     rolesTitle: "ロール",
     rolesDescription: "各ロールがこのインスタンスでできること。Admin ロールは常に全権限を保ちます。",
     roleNew: "新しいロール",

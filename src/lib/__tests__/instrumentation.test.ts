@@ -8,7 +8,7 @@ import * as os from "os";
  *
  * Bug: Without SECRET_KEY in the environment, getSecret() threw FATAL in
  * production mode, causing every login/setup to 500. The fix: ensureSecretKey()
- * in instrumentation.ts auto-generates and persists a key on first boot.
+ * in instrumentation-node.ts auto-generates and persists a key on first boot.
  *
  * If someone removes ensureSecretKey() or breaks the logic, these tests fail.
  */
@@ -34,7 +34,7 @@ describe("ensureSecretKey (instrumentation bootstrap)", () => {
   it("generates and persists a new key when SECRET_KEY is absent", async () => {
     process.env.DATABASE_PATH = path.join(tmpDir, "linkbreeze.db");
 
-    const { ensureSecretKey } = await import("@/instrumentation");
+    const { ensureSecretKey } = await import("@/instrumentation-node");
     await ensureSecretKey();
 
     // Key is set in the environment
@@ -53,14 +53,14 @@ describe("ensureSecretKey (instrumentation bootstrap)", () => {
 
     // First boot — generates a key
     vi.resetModules();
-    const mod1 = await import("@/instrumentation");
+    const mod1 = await import("@/instrumentation-node");
     await mod1.ensureSecretKey();
     const firstKey = process.env.SECRET_KEY!;
 
     // Simulate a container restart: env reset, but file persists
     delete process.env.SECRET_KEY;
     vi.resetModules();
-    const mod2 = await import("@/instrumentation");
+    const mod2 = await import("@/instrumentation-node");
     await mod2.ensureSecretKey();
 
     // Same key loaded from file — not a new one
@@ -71,7 +71,7 @@ describe("ensureSecretKey (instrumentation bootstrap)", () => {
     process.env.SECRET_KEY = "user-provided-secret-key-from-docker-compose";
     process.env.DATABASE_PATH = path.join(tmpDir, "linkbreeze.db");
 
-    const { ensureSecretKey } = await import("@/instrumentation");
+    const { ensureSecretKey } = await import("@/instrumentation-node");
     await ensureSecretKey();
 
     // Env var takes priority — no file should be created
@@ -86,7 +86,7 @@ describe("ensureSecretKey (instrumentation bootstrap)", () => {
 
     // First boot
     vi.resetModules();
-    const mod1 = await import("@/instrumentation");
+    const mod1 = await import("@/instrumentation-node");
     await mod1.ensureSecretKey();
     const key1 = process.env.SECRET_KEY!;
 
@@ -94,7 +94,7 @@ describe("ensureSecretKey (instrumentation bootstrap)", () => {
     fs.unlinkSync(path.join(tmpDir, ".secret-key"));
     delete process.env.SECRET_KEY;
     vi.resetModules();
-    const mod2 = await import("@/instrumentation");
+    const mod2 = await import("@/instrumentation-node");
     await mod2.ensureSecretKey();
     const key2 = process.env.SECRET_KEY!;
 

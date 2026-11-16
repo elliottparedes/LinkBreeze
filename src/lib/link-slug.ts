@@ -14,6 +14,7 @@ export const MAX_SLUG_LENGTH = 64;
 /** Route names a slug must never shadow. `sitemap.xml` / `robots.txt` included. */
 export const RESERVED_SLUGS = [
   "login",
+  "signup",
   "setup",
   "invite",
   "dashboard",
@@ -25,6 +26,7 @@ export const RESERVED_SLUGS = [
   "pages",
   "accounts",
   "audit",
+  "ops",
   "api",
   "sitemap.xml",
   "robots.txt",

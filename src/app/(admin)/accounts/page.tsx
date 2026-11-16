@@ -24,10 +24,11 @@ export default async function AccountsPage() {
   const { caps } = await getCapabilitiesForUser(session.userId);
   if (!caps.manageAccounts) redirect("/dashboard");
 
-  const [rows, roleRows, pagePolicy, t] = await Promise.all([
+  const [rows, roleRows, pagePolicy, signupSetting, t] = await Promise.all([
     listAccountSummaries(),
     listRoles(),
     getSetting("accountPagePolicy"),
+    getSetting("publicSignup"),
     getTranslations("accounts"),
   ]);
 
@@ -68,6 +69,7 @@ export default async function AccountsPage() {
         accounts={accounts}
         roles={roles}
         pagePolicy={pagePolicy === "manual" ? "manual" : "per_user"}
+        publicSignup={signupSetting === "on" ? "on" : "off"}
         currentUserId={session.userId}
         canManageInstance={caps.manageInstance}
       />

@@ -123,6 +123,7 @@ describe("isAdminPath", () => {
   it("covers admin pages and admin APIs, nothing public", () => {
     for (const p of [
       "/login",
+      "/signup",
       "/setup",
       "/dashboard",
       "/dashboard/whatever",
@@ -135,6 +136,7 @@ describe("isAdminPath", () => {
       "/domains",
       "/accounts",
       "/audit",
+      "/ops",
       "/api/setup",
       "/api/onboarding",
       "/api/backup",

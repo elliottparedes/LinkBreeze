@@ -71,6 +71,7 @@ describe("slugError", () => {
   it("reserved list contains exactly the app route names", () => {
     expect([...RESERVED_SLUGS]).toEqual([
       "login",
+      "signup",
       "setup",
       "invite",
       "dashboard",
@@ -82,6 +83,7 @@ describe("slugError", () => {
       "pages",
       "accounts",
       "audit",
+      "ops",
       "api",
       "sitemap.xml",
       "robots.txt",

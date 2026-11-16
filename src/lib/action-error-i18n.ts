@@ -17,6 +17,8 @@ const MESSAGE_KEYS: Record<string, string> = {
   "Invalid username or password.": "invalidCredentials",
   "Setup has already been completed": "setupCompleted",
   "Username already taken": "usernameTaken",
+  "This username is reserved": "usernameReserved",
+  "Sign-up is not open on this instance": "signupClosed",
   "Something went wrong during setup. Please try again.": "setupFailed",
   "Something went wrong. Please try again.": "somethingWentWrong",
   "Something went wrong while deleting the page. Please try again.": "pageDeleteFailed",

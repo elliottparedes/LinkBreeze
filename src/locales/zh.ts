@@ -40,6 +40,7 @@ const zh: Messages = {
     primary: "主要",
     accounts: "账户",
     audit: "审计",
+    ops: "运行状况",
   },
 
   shell: {
@@ -78,6 +79,18 @@ const zh: Messages = {
     totpTrust: "在此设备上信任 30 天",
     totpInvalid: "验证码无效。",
     totpExpired: "本次登录已过期，请重新登录。",
+  },
+
+  signup: {
+    title: "创建你的页面",
+    subtitle: "选择一个用户名，公开页面会使用它。",
+    username: "用户名",
+    password: "密码",
+    passwordHint: "至少 8 个字符，并包含大写、小写和数字。",
+    submit: "创建账户",
+    submitPending: "正在创建账户…",
+    signIn: "已有账户？登录",
+    createAccount: "创建账户",
   },
 
   setup: {
@@ -1073,6 +1086,8 @@ const zh: Messages = {
     setupCompleted: "设置已完成",
     setupFailed: "设置过程中出了点问题，请重试。",
     usernameTaken: "用户名已被占用",
+    usernameReserved: "该用户名已被系统保留",
+    signupClosed: "此实例未开放注册",
     pageDeleteFailed: "删除页面时出了点问题，请重试。",
     slugExists: "已存在使用此 Slug 的页面",
     defaultPageProtected: "默认页面无法删除",
@@ -1143,6 +1158,30 @@ const zh: Messages = {
 
   // ─── 自定义域名（#85）────────────────────────────────────────────────
   // ─── Accounts (#124) ───────────────────────────────────────────────────
+  ops: {
+    title: "运行状况",
+    description: "这个实例现在的状态。只有实例管理员能看到。",
+    sectionProcess: "当前进程",
+    sectionPeople: "用户",
+    version: "版本",
+    uptime: "运行时间",
+    memoryUsed: "应用内存",
+    heapUsed: "JavaScript 堆",
+    memoryFree: "空闲内存",
+    memoryTotal: "总内存",
+    dbSize: "数据库大小",
+    accounts: "账户",
+    active: "活跃",
+    disabled: "已停用",
+    signupsDay: "近 1 天注册",
+    signupsWeek: "近 7 天注册",
+    signupsMonth: "近 30 天注册",
+    pages: "页面",
+    links: "链接",
+    recentSignups: "最近注册",
+    noSignups: "还没有账户。",
+  },
+
   audit: {
     title: "审计日志",
     description: "安全相关事件：账户、角色、登录、设置更改。",
@@ -1249,6 +1288,10 @@ const zh: Messages = {
     pagePolicyDescription: "新账户是否自动获得自己的公开页面，或由管理员手动创建。",
     policyPerUser: "每个账户获得自己的页面",
     policyManual: "页面由管理员手动创建",
+    publicSignupTitle: "公开注册",
+    publicSignupDescription: "开启后，任何人都可以创建成员账户和自己的页面。默认关闭。",
+    publicSignupOn: "任何人都可以注册",
+    publicSignupOff: "仅邀请或管理员可创建账户",
     rolesTitle: "角色",
     rolesDescription: "每个角色在此实例上可以做什么。Admin 角色始终拥有完全控制权。",
     roleNew: "新建角色",

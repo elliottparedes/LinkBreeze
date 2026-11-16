@@ -45,10 +45,12 @@ const PROTECTED_PREFIXES = [
   "/domains",
   "/accounts",
   "/audit",
+  "/ops",
 ];
 
 const PUBLIC_EXACT = new Set([
   "/login",
+  "/signup",
   "/setup",
   "/api/track",
   "/api/qr",
@@ -58,6 +60,7 @@ const PUBLIC_EXACT = new Set([
 // Admin-reserved paths (never served as public link slugs)
 const ADMIN_RESERVED = new Set([
   "/login",
+  "/signup",
   "/setup",
   "/invite",
   "/dashboard",
@@ -69,6 +72,7 @@ const ADMIN_RESERVED = new Set([
   "/domains",
   "/accounts",
   "/audit",
+  "/ops",
 ]);
 
 export async function proxy(request: NextRequest) {
@@ -95,6 +99,7 @@ export async function proxy(request: NextRequest) {
       (p) => pathname === p || pathname.startsWith(p + "/"),
     ) ||
     pathname === "/login" ||
+    pathname === "/signup" ||
     pathname === "/setup";
 
   const localeCookie = request.cookies.get(LOCALE_COOKIE)?.value;

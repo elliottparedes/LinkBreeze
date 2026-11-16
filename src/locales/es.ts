@@ -40,6 +40,7 @@ const es: Messages = {
     primary: "Principal",
     accounts: "Cuentas",
     audit: "Auditoría",
+    ops: "Operación",
   },
 
   shell: {
@@ -78,6 +79,18 @@ const es: Messages = {
     totpTrust: "Confiar en este dispositivo durante 30 días",
     totpInvalid: "Código de autenticación no válido.",
     totpExpired: "Este intento de inicio de sesión ha caducado. Inicia sesión de nuevo.",
+  },
+
+  signup: {
+    title: "Crea tu página",
+    subtitle: "Elige un nombre de usuario. Tu página pública lo usará.",
+    username: "Nombre de usuario",
+    password: "Contraseña",
+    passwordHint: "Al menos 8 caracteres con mayúscula, minúscula y un número.",
+    submit: "Crear cuenta",
+    submitPending: "Creando cuenta…",
+    signIn: "¿Ya tienes cuenta? Inicia sesión",
+    createAccount: "Crear una cuenta",
   },
 
   setup: {
@@ -1115,6 +1128,8 @@ const es: Messages = {
     setupCompleted: "La configuración ya se ha completado",
     setupFailed: "Algo ha ido mal durante la configuración. Inténtalo de nuevo.",
     usernameTaken: "El nombre de usuario ya está en uso",
+    usernameReserved: "Este nombre de usuario está reservado",
+    signupClosed: "El registro no está abierto en esta instancia",
     pageDeleteFailed:
       "Algo ha ido mal al eliminar la página. Inténtalo de nuevo.",
     slugExists: "Ya existe una página con este slug",
@@ -1191,6 +1206,30 @@ const es: Messages = {
 
   // ─── Dominios personalizados (#85) ─────────────────────────────────────
   // ─── Accounts (#124) ───────────────────────────────────────────────────
+  ops: {
+    title: "Operación",
+    description: "Qué está haciendo esta instancia ahora. Solo la ven los operadores.",
+    sectionProcess: "Este proceso",
+    sectionPeople: "Personas",
+    version: "Versión",
+    uptime: "Tiempo activo",
+    memoryUsed: "Memoria de la app",
+    heapUsed: "Heap de JavaScript",
+    memoryFree: "Memoria libre",
+    memoryTotal: "Memoria total",
+    dbSize: "Tamaño de la base",
+    accounts: "Cuentas",
+    active: "Activas",
+    disabled: "Desactivadas",
+    signupsDay: "Registros, último día",
+    signupsWeek: "Registros, últimos 7 días",
+    signupsMonth: "Registros, últimos 30 días",
+    pages: "Páginas",
+    links: "Enlaces",
+    recentSignups: "Últimos registros",
+    noSignups: "Todavía no hay cuentas.",
+  },
+
   audit: {
     title: "Registro de auditoría",
     description: "Eventos de seguridad: cuentas, roles, inicios de sesión y cambios de ajustes.",
@@ -1297,6 +1336,10 @@ const es: Messages = {
     pagePolicyDescription: "Si una cuenta nueva obtiene automáticamente su propia página pública o un admin las crea manualmente.",
     policyPerUser: "Cada cuenta obtiene su propia página",
     policyManual: "Las páginas se crean manualmente",
+    publicSignupTitle: "Registro público",
+    publicSignupDescription: "Si está activo, cualquiera puede crear una cuenta de miembro y su página. Desactivado por defecto.",
+    publicSignupOn: "Cualquiera puede registrarse",
+    publicSignupOff: "El registro es solo por invitación o un admin",
     rolesTitle: "Roles",
     rolesDescription: "Qué puede hacer cada rol en esta instancia. El rol Admin siempre mantiene el control total.",
     roleNew: "Nuevo rol",

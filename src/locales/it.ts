@@ -41,6 +41,7 @@ const it: Messages = {
     primary: "Primario",
     accounts: "Account",
     audit: "Audit",
+    ops: "Ops",
   },
 
   shell: {
@@ -79,6 +80,18 @@ const it: Messages = {
     totpTrust: "Considera affidabile questo dispositivo per 30 giorni",
     totpInvalid: "Codice di autenticazione non valido.",
     totpExpired: "Questo tentativo di accesso è scaduto. Effettua di nuovo l'accesso.",
+  },
+
+  signup: {
+    title: "Crea la tua pagina",
+    subtitle: "Scegli un nome utente. La tua pagina pubblica lo userà.",
+    username: "Nome utente",
+    password: "Password",
+    passwordHint: "Almeno 8 caratteri con maiuscola, minuscola e un numero.",
+    submit: "Crea account",
+    submitPending: "Creazione account…",
+    signIn: "Hai già un account? Accedi",
+    createAccount: "Crea un account",
   },
 
   setup: {
@@ -1213,6 +1226,8 @@ const it: Messages = {
     setupCompleted: "La configurazione è già stata completata",
     setupFailed: "Qualcosa è andato storto durante la configurazione. Riprova.",
     usernameTaken: "Nome utente già in uso",
+    usernameReserved: "Questo nome utente è riservato",
+    signupClosed: "La registrazione non è aperta su questa istanza",
     pageDeleteFailed: "Qualcosa è andato storto durante l'eliminazione della pagina. Riprova.",
     slugExists: "Esiste già una pagina con questo slug",
     defaultPageProtected: "La pagina predefinita non può essere eliminata",
@@ -1287,6 +1302,30 @@ const it: Messages = {
 
   // ─── Domini personalizzati (#85) ──────────────────────────────────────
   // ─── Accounts (#124) ───────────────────────────────────────────────────
+  ops: {
+    title: "Ops",
+    description: "Cosa sta facendo questa istanza adesso. Visibile solo agli operatori.",
+    sectionProcess: "Questo processo",
+    sectionPeople: "Persone",
+    version: "Versione",
+    uptime: "Tempo di attività",
+    memoryUsed: "Memoria dell'app",
+    heapUsed: "Heap JavaScript",
+    memoryFree: "Memoria libera",
+    memoryTotal: "Memoria totale",
+    dbSize: "Dimensione database",
+    accounts: "Account",
+    active: "Attivi",
+    disabled: "Disattivati",
+    signupsDay: "Iscrizioni, ultimo giorno",
+    signupsWeek: "Iscrizioni, ultimi 7 giorni",
+    signupsMonth: "Iscrizioni, ultimi 30 giorni",
+    pages: "Pagine",
+    links: "Link",
+    recentSignups: "Ultime iscrizioni",
+    noSignups: "Nessun account per ora.",
+  },
+
   audit: {
     title: "Registro di controllo",
     description: "Eventi di sicurezza: account, ruoli, accessi, modifiche alle impostazioni.",
@@ -1393,6 +1432,10 @@ const it: Messages = {
     pagePolicyDescription: "Se un nuovo account riceve automaticamente la propria pagina pubblica o se un admin le crea manualmente.",
     policyPerUser: "Ogni account riceve la propria pagina",
     policyManual: "Le pagine vengono create manualmente",
+    publicSignupTitle: "Registrazione pubblica",
+    publicSignupDescription: "Se attivo, chiunque può creare un account membro e la propria pagina. Disattivo per impostazione predefinita.",
+    publicSignupOn: "Chiunque può registrarsi",
+    publicSignupOff: "Registrazione solo su invito o da un admin",
     rolesTitle: "Ruoli",
     rolesDescription: "Cosa può fare ogni ruolo su questa istanza. Il ruolo Admin mantiene sempre il controllo completo.",
     roleNew: "Nuovo ruolo",

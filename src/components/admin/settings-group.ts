@@ -1,4 +1,4 @@
-import { Settings, Globe, Users, ScrollText, type LucideIcon } from "lucide-react";
+import { Activity, Settings, Globe, Users, ScrollText, type LucideIcon } from "lucide-react";
 import type { Messages } from "@/locales/en";
 
 /** The Settings group: "App" IS the /settings page entry; Settings itself
@@ -19,6 +19,7 @@ export const SETTINGS_GROUP: SettingsGroupItem[] = [
   { href: "/domains", label: "domains", icon: Globe, gate: "instance" },
   { href: "/accounts", label: "accounts", icon: Users, gate: "accounts" },
   { href: "/audit", label: "audit", icon: ScrollText, gate: "instance" },
+  { href: "/ops", label: "ops", icon: Activity, gate: "instance" },
 ];
 
 export const SETTINGS_GROUP_PATHS = SETTINGS_GROUP.map((item) => item.href);

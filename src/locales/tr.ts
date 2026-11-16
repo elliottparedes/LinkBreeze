@@ -40,6 +40,7 @@ const tr: Messages = {
     primary: "Birincil",
     accounts: "Hesaplar",
     audit: "Denetim",
+    ops: "İşletim",
   },
 
   shell: {
@@ -78,6 +79,18 @@ const tr: Messages = {
     totpTrust: "Bu cihaza 30 gün güven",
     totpInvalid: "Geçersiz doğrulama kodu.",
     totpExpired: "Bu giriş denemesinin süresi doldu. Lütfen tekrar giriş yap.",
+  },
+
+  signup: {
+    title: "Sayfanı oluştur",
+    subtitle: "Bir kullanıcı adı seç. Herkese açık sayfan onu kullanır.",
+    username: "Kullanıcı adı",
+    password: "Parola",
+    passwordHint: "En az 8 karakter; büyük harf, küçük harf ve bir rakam.",
+    submit: "Hesap oluştur",
+    submitPending: "Hesap oluşturuluyor…",
+    signIn: "Zaten hesabın var mı? Giriş yap",
+    createAccount: "Hesap oluştur",
   },
 
   setup: {
@@ -1037,6 +1050,8 @@ const tr: Messages = {
     setupCompleted: "Kurulum zaten tamamlandı",
     setupFailed: "Kurulum sırasında bir şeyler ters gitti. Lütfen tekrar dene.",
     usernameTaken: "Kullanıcı adı zaten alınmış",
+    usernameReserved: "Bu kullanıcı adı ayrılmış",
+    signupClosed: "Bu örnekte kayıt açık değil",
     pageDeleteFailed: "Sayfa silinirken bir şeyler ters gitti. Lütfen tekrar dene.",
     slugExists: "Bu slug'a sahip bir sayfa zaten var",
     defaultPageProtected: "Varsayılan sayfa silinemez",
@@ -1111,6 +1126,30 @@ const tr: Messages = {
 
   // ─── Custom domains (#85) ──────────────────────────────────────────────
   // ─── Accounts (#124) ───────────────────────────────────────────────────
+  ops: {
+    title: "İşletim",
+    description: "Bu örneğin şu anki durumu. Yalnızca operatörler görür.",
+    sectionProcess: "Bu süreç",
+    sectionPeople: "Kişiler",
+    version: "Sürüm",
+    uptime: "Çalışma süresi",
+    memoryUsed: "Uygulama belleği",
+    heapUsed: "JavaScript yığını",
+    memoryFree: "Boş bellek",
+    memoryTotal: "Toplam bellek",
+    dbSize: "Veritabanı boyutu",
+    accounts: "Hesaplar",
+    active: "Etkin",
+    disabled: "Devre dışı",
+    signupsDay: "Son 1 gün kayıt",
+    signupsWeek: "Son 7 gün kayıt",
+    signupsMonth: "Son 30 gün kayıt",
+    pages: "Sayfalar",
+    links: "Bağlantılar",
+    recentSignups: "Son kayıtlar",
+    noSignups: "Henüz hesap yok.",
+  },
+
   audit: {
     title: "Denetim günlüğü",
     description: "Güvenlikle ilgili olaylar: hesaplar, roller, girişler, ayar değişiklikleri.",
@@ -1217,6 +1256,10 @@ const tr: Messages = {
     pagePolicyDescription: "Yeni bir hesabın otomatik olarak kendi genel sayfasını alıp almayacağı veya sayfaların bir yönetici tarafından elle oluşturulup oluşturulmayacağı.",
     policyPerUser: "Her hesap kendi sayfasını alır",
     policyManual: "Sayfalar elle oluşturulur",
+    publicSignupTitle: "Herkese açık kayıt",
+    publicSignupDescription: "Açıkken herkes bir üye hesabı ve kendi sayfasını oluşturabilir. Varsayılan kapalıdır.",
+    publicSignupOn: "Herkes kaydolabilir",
+    publicSignupOff: "Kayıt yalnızca davet veya yönetici ile",
     rolesTitle: "Roller",
     rolesDescription: "Her rolün bu kurulumda yapabilecekleri. Admin rolü her zaman tam kontrole sahiptir.",
     roleNew: "Yeni rol",

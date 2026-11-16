@@ -40,6 +40,7 @@ const ar: Messages = {
     primary: "رئيسي",
     accounts: "حسابات",
     audit: "التدقيق",
+    ops: "التشغيل",
   },
 
   shell: {
@@ -78,6 +79,18 @@ const ar: Messages = {
     totpTrust: "الثقة بهذا الجهاز لمدة 30 يوماً",
     totpInvalid: "رمز مصادقة غير صالح.",
     totpExpired: "انتهت صلاحية محاولة الدخول هذه. يرجى تسجيل الدخول مجدداً.",
+  },
+
+  signup: {
+    title: "أنشئ صفحتك",
+    subtitle: "اختر اسم مستخدم. ستستخدمه صفحتك العامة.",
+    username: "اسم المستخدم",
+    password: "كلمة المرور",
+    passwordHint: "8 أحرف على الأقل مع حرف كبير وصغير ورقم.",
+    submit: "إنشاء حساب",
+    submitPending: "جارٍ إنشاء الحساب…",
+    signIn: "لديك حساب؟ سجّل الدخول",
+    createAccount: "إنشاء حساب",
   },
 
   setup: {
@@ -1088,6 +1101,8 @@ const ar: Messages = {
     setupCompleted: "اكتمل الإعداد بالفعل",
     setupFailed: "حدث خطأ أثناء الإعداد. حاول مرة أخرى.",
     usernameTaken: "اسم المستخدم محجوز",
+    usernameReserved: "اسم المستخدم هذا محجوز للنظام",
+    signupClosed: "التسجيل غير متاح على هذه النسخة",
     pageDeleteFailed: "حدث خطأ أثناء حذف الصفحة. حاول مرة أخرى.",
     slugExists: "توجد صفحة بهذا المعرّف بالفعل",
     defaultPageProtected: "لا يمكن حذف الصفحة الافتراضية",
@@ -1158,6 +1173,30 @@ const ar: Messages = {
 
   // ─── النطاقات المخصصة (#85) ────────────────────────────────────────────
   // ─── Accounts (#124) ───────────────────────────────────────────────────
+  ops: {
+    title: "التشغيل",
+    description: "ماذا يفعل هذا المثيل الآن. يراه المشغّلون فقط.",
+    sectionProcess: "هذه العملية",
+    sectionPeople: "الأشخاص",
+    version: "الإصدار",
+    uptime: "مدة التشغيل",
+    memoryUsed: "ذاكرة التطبيق",
+    heapUsed: "كومة جافاسكربت",
+    memoryFree: "الذاكرة الحرة",
+    memoryTotal: "إجمالي الذاكرة",
+    dbSize: "حجم قاعدة البيانات",
+    accounts: "الحسابات",
+    active: "نشط",
+    disabled: "معطّل",
+    signupsDay: "تسجيلات آخر يوم",
+    signupsWeek: "تسجيلات آخر 7 أيام",
+    signupsMonth: "تسجيلات آخر 30 يومًا",
+    pages: "الصفحات",
+    links: "الروابط",
+    recentSignups: "أحدث التسجيلات",
+    noSignups: "لا حسابات بعد.",
+  },
+
   audit: {
     title: "سجل التدقيق",
     description: "الأحداث الأمنية: الحسابات والأدوار وتسجيلات الدخول وتغييرات الإعدادات.",
@@ -1264,6 +1303,10 @@ const ar: Messages = {
     pagePolicyDescription: "هل يحصل الحساب الجديد تلقائياً على صفحته العامة الخاصة، أم ينشئها المشرف يدويًا.",
     policyPerUser: "كل حساب يحصل على صفحته الخاصة",
     policyManual: "يتم إنشاء الصفحات يدويًا",
+    publicSignupTitle: "التسجيل العام",
+    publicSignupDescription: "عند التفعيل يمكن لأي شخص إنشاء حساب عضو وصفحته. مغلق افتراضيًا.",
+    publicSignupOn: "يمكن لأي شخص التسجيل",
+    publicSignupOff: "التسجيل بدعوة أو عبر المسؤول فقط",
     rolesTitle: "الأدوار",
     rolesDescription: "ما يمكن لكل دور فعله على هذه النسخة. دور Admin يحافظ دائمًا على السيطرة الكاملة.",
     roleNew: "دور جديد",

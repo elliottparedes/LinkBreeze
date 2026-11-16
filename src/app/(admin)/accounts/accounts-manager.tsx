@@ -26,6 +26,7 @@ import {
   deleteAccountAction,
   setAccountPagePolicyAction,
   setAccountStatusAction,
+  setPublicSignupAction,
 } from "@/server/actions/accounts";
 import {
   createInviteAction,
@@ -94,12 +95,14 @@ export function AccountsManager({
   accounts,
   roles,
   pagePolicy,
+  publicSignup,
   currentUserId,
   canManageInstance,
 }: {
   accounts: AccountSummary[];
   roles: RoleRowLite[];
   pagePolicy: "per_user" | "manual";
+  publicSignup: "on" | "off";
   currentUserId: number;
   canManageInstance: boolean;
 }) {
@@ -455,6 +458,40 @@ export function AccountsManager({
                 </option>
                 <option value="manual" className="bg-background text-foreground">
                   {t("policyManual")}
+                </option>
+              </select>
+            </label>
+          </CardContent>
+        </Card>
+      )}
+
+      {canManageInstance && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("publicSignupTitle")}</CardTitle>
+            <CardDescription>{t("publicSignupDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="sr-only">{t("publicSignupTitle")}</span>
+              <select
+                value={publicSignup}
+                disabled={pending}
+                onChange={(e) =>
+                  runAction(
+                    setPublicSignupAction as unknown as (
+                      ...args: never[]
+                    ) => Promise<{ success: boolean; error?: string }>,
+                    e.target.value,
+                  )
+                }
+                className={SELECT_CLASSES}
+              >
+                <option value="off" className="bg-background text-foreground">
+                  {t("publicSignupOff")}
+                </option>
+                <option value="on" className="bg-background text-foreground">
+                  {t("publicSignupOn")}
                 </option>
               </select>
             </label>

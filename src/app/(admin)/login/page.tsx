@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getSession } from "@/lib/auth";
+import { publicSignupEnabled } from "@/server/actions/accounts";
 import { getOidcConfig } from "@/server/queries";
 import { getOidcClientSecret } from "@/server/oidc-flow";
 import { LoginForm } from "./login-form";
@@ -19,10 +20,15 @@ export default async function LoginPage() {
   // the env secret exists (a config without its secret cannot complete).
   const oidc = await getOidcConfig();
   const ssoAvailable = oidc !== null && getOidcClientSecret() !== null;
+  const signupEnabled = await publicSignupEnabled();
 
   return (
     <Suspense fallback={null}>
-      <LoginForm ssoAvailable={ssoAvailable} ssoReplacesLocal={oidc?.mode === "replaces_local"} />
+      <LoginForm
+        ssoAvailable={ssoAvailable}
+        ssoReplacesLocal={oidc?.mode === "replaces_local"}
+        signupEnabled={signupEnabled}
+      />
     </Suspense>
   );
 }

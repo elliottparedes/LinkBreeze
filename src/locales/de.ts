@@ -40,6 +40,7 @@ const de: Messages = {
     primary: "Primär",
     accounts: "Konten",
     audit: "Audit-Log",
+    ops: "Betrieb",
   },
 
   shell: {
@@ -78,6 +79,18 @@ const de: Messages = {
     totpTrust: "Diesem Gerät 30 Tage vertrauen",
     totpInvalid: "Ungültiger Authentifizierungscode.",
     totpExpired: "Diese Anmeldung ist abgelaufen. Bitte melde dich erneut an.",
+  },
+
+  signup: {
+    title: "Seite erstellen",
+    subtitle: "Wähle einen Benutzernamen. Deine öffentliche Seite verwendet ihn.",
+    username: "Benutzername",
+    password: "Passwort",
+    passwordHint: "Mindestens 8 Zeichen mit Groß-, Kleinbuchstabe und einer Ziffer.",
+    submit: "Konto erstellen",
+    submitPending: "Konto wird erstellt…",
+    signIn: "Schon ein Konto? Anmelden",
+    createAccount: "Konto erstellen",
   },
 
   setup: {
@@ -1124,6 +1137,8 @@ const de: Messages = {
     setupFailed:
       "Beim Setup ist etwas schiefgelaufen. Bitte versuche es erneut.",
     usernameTaken: "Der Benutzername ist bereits vergeben",
+    usernameReserved: "Dieser Benutzername ist reserviert",
+    signupClosed: "Die Registrierung ist auf dieser Instanz nicht geöffnet",
     pageDeleteFailed:
       "Beim Löschen der Seite ist etwas schiefgelaufen. Bitte versuche es erneut.",
     slugExists: "Eine Seite mit diesem Slug existiert bereits",
@@ -1204,6 +1219,30 @@ const de: Messages = {
 
   // ─── Eigene Domains (#85) ──────────────────────────────────────────────
   // ─── Accounts (#124) ───────────────────────────────────────────────────
+  ops: {
+    title: "Betrieb",
+    description: "Was diese Instanz gerade tut. Nur Instanz-Operatoren sehen das.",
+    sectionProcess: "Dieser Prozess",
+    sectionPeople: "Personen",
+    version: "Version",
+    uptime: "Laufzeit",
+    memoryUsed: "App-Speicher",
+    heapUsed: "JavaScript-Heap",
+    memoryFree: "Freier Speicher",
+    memoryTotal: "Speicher gesamt",
+    dbSize: "Datenbankgröße",
+    accounts: "Konten",
+    active: "Aktiv",
+    disabled: "Deaktiviert",
+    signupsDay: "Registrierungen, letzter Tag",
+    signupsWeek: "Registrierungen, letzte 7 Tage",
+    signupsMonth: "Registrierungen, letzte 30 Tage",
+    pages: "Seiten",
+    links: "Links",
+    recentSignups: "Neueste Registrierungen",
+    noSignups: "Noch keine Konten.",
+  },
+
   audit: {
     title: "Audit-Log",
     description: "Sicherheitsrelevante Ereignisse: Konten, Rollen, Anmeldungen, Einstellungsänderungen.",
@@ -1310,6 +1349,10 @@ const de: Messages = {
     pagePolicyDescription: "Ob ein neues Konto automatisch seine eigene öffentliche Seite bekommt oder Seiten von einem Admin manuell erstellt werden.",
     policyPerUser: "Jedes Konto bekommt seine eigene Seite",
     policyManual: "Seiten werden manuell erstellt",
+    publicSignupTitle: "Öffentliche Registrierung",
+    publicSignupDescription: "Wenn aktiv, kann jeder ein Mitgliedskonto und eine eigene Seite erstellen. Standardmäßig aus.",
+    publicSignupOn: "Jeder kann sich registrieren",
+    publicSignupOff: "Registrierung nur per Einladung oder Admin",
     rolesTitle: "Rollen",
     rolesDescription: "Was jede Rolle auf dieser Instanz darf. Die Admin-Rolle behält immer die volle Kontrolle.",
     roleNew: "Neue Rolle",
