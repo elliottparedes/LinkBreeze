@@ -1,7 +1,7 @@
 /**
  * Italiano — locale admin UI.
  *
- * lastSyncedHash: ba7c181f2405 ← rigenerato da `npm run i18n:check -- --update`
+ * lastSyncedHash: efad28acf098 ← rigenerato da `npm run i18n:check -- --update`
  * (mismatch = source inglese modificato, risincronizzare questo file)
  */
 import type { Messages } from "./en";
@@ -174,6 +174,30 @@ const it: Messages = {
     noClicksYet: "Ancora nessun clic.",
     dailyViewsClicks: "Visualizzazioni e clic giornalieri",
     topLinksDesc: "{count, plural, one {# link con clic} other {# link con clic}}",
+    sourcesTitle: "Sorgenti campagna",
+    sourcesDesc: "Incolla un link contrassegnato in ogni app. Il loro browser nasconde da dove arriva la visita.",
+    sourcesCopy: "Copia",
+    sourcesCopied: "Copiato",
+    sourceIg: "Instagram",
+    sourceTiktok: "TikTok",
+    sourceYt: "YouTube",
+    sourceX: "X",
+    sourceNewsletter: "Newsletter",
+    sourceQr: "Codice QR",
+    sourceUntagged: "Senza marca",
+    ctrNudge: "Sposta su \"{title}\". Converte al {ctr}%, davanti a \"{above}\" al {aboveCtr}%.",
+    heatmapTitle: "Quando passano le persone",
+    heatmapDesc: "Visite per giorno e ora (UTC)",
+    heatmapEmpty: "Nessuna visita in questo periodo.",
+    activityTitle: "Attività recente",
+    activityDesc: "Ultime visite, clic sui link e tap social",
+    activityView: "Visita alla pagina",
+    activityClick: "Clic su {title}",
+    activitySocial: "Tap su {platform}",
+    activityEmpty: "Nessuna attività in questo periodo.",
+    socialTapsTitle: "Tap social",
+    socialTapsDesc: "Tap sulla riga di icone, separati dai clic sui link",
+    socialTapsEmpty: "Nessun tap social per ora.",
   },
 
   linksPage: {

@@ -48,6 +48,16 @@ import { ExpandableSection } from "./expandable-section";
 import { getTranslations } from "next-intl/server";
 import { getLocale } from "@/i18n/server";
 import { formatNumber } from "@/i18n/format";
+import {
+  getLinkRates,
+  getRecentActivity,
+  getSocialTaps,
+  getTrafficSources,
+  getViewHeatmap,
+} from "@/server/insights";
+import { SourceLinks } from "./source-links";
+import { VisitHeatmap } from "./visit-heatmap";
+import { RecentActivity } from "./recent-activity";
 
 export const dynamic = "force-dynamic";
 
@@ -275,38 +285,47 @@ function TopLinksList({
   links,
   max,
   noClicksLabel,
+  nudge,
 }: {
-  links: { id: number; title: string; clicks: number }[];
+  links: { id: number; title: string; clicks: number; ctr: number }[];
   max?: number;
   noClicksLabel: string;
+  nudge?: string | null;
 }) {
-  if (links.length === 0) {
+  if (links.length === 0 && !nudge) {
     return <p className="text-sm text-muted-foreground">{noClicksLabel}</p>;
   }
   const topMax = links[0]?.clicks || 1;
   return (
-    <ul className="flex flex-col gap-2">
-      {links.slice(0, max).map((link, i) => {
-        const pct = Math.round((link.clicks / topMax) * 100);
-        return (
-          <li key={link.id} className="flex items-center gap-2 text-sm">
-            <span className="w-4 shrink-0 text-xs text-muted-foreground">
-              {i + 1}
-            </span>
-            <span className="truncate">{link.title}</span>
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-[var(--aurora-grad)]"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <span className="w-8 shrink-0 text-right tabular-nums text-muted-foreground">
-              {link.clicks}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="flex flex-col gap-2">
+      {nudge ? <p className="text-xs text-lavender">{nudge}</p> : null}
+      {links.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{noClicksLabel}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {links.slice(0, max).map((link, i) => {
+            const pct = Math.round((link.clicks / topMax) * 100);
+            return (
+              <li key={link.id} className="flex items-center gap-2 text-sm">
+                <span className="w-4 shrink-0 text-xs text-muted-foreground">
+                  {i + 1}
+                </span>
+                <span className="truncate">{link.title}</span>
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-[var(--aurora-grad)]"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="shrink-0 text-right tabular-nums text-xs text-muted-foreground">
+                  {link.clicks} · {link.ctr}%
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -335,7 +354,7 @@ export default async function DashboardPage({
   );
   const pageId = activePage?.id;
 
-  const [stats, prevStats, links, breakdown, updateResult, activeTheme, retentionDays] = await Promise.all([
+  const [stats, prevStats, links, breakdown, updateResult, activeTheme, retentionDays, sources, linkRates, heatmap, activity, socialTaps] = await Promise.all([
     getDashboardStats(range, pageId),
     getPreviousStats(range, pageId),
     getAllLinks(pageId),
@@ -343,6 +362,11 @@ export default async function DashboardPage({
     checkForUpdates(),
     getActiveTheme(),
     getAnalyticsRetentionDays(),
+    getTrafficSources(range, pageId),
+    getLinkRates(range, pageId),
+    getViewHeatmap(range, pageId),
+    getRecentActivity(range, pageId),
+    getSocialTaps(range, pageId),
   ]);
 
   const activeCount = links.filter((l) => l.isActive).length;
@@ -510,6 +534,41 @@ export default async function DashboardPage({
         />
       </div>
 
+      <div className="grid shrink-0 gap-3 lg:grid-cols-3">
+        <Card className="h-full">
+          <CardContent className="flex h-full flex-col gap-3">
+            <div>
+              <span className="font-heading text-sm font-medium">{t("sourcesTitle")}</span>
+              <p className="text-xs text-muted-foreground">{t("sourcesDesc")}</p>
+            </div>
+            <SourceLinks
+              slug={activePage?.slug ?? "u"}
+              baseUrl={(process.env.BASE_URL || "").replace(/\/$/, "")}
+              counts={sources.counts}
+              untagged={sources.untagged}
+            />
+          </CardContent>
+        </Card>
+        <Card className="h-full">
+          <CardContent className="flex h-full flex-col gap-3">
+            <div>
+              <span className="font-heading text-sm font-medium">{t("heatmapTitle")}</span>
+              <p className="text-xs text-muted-foreground">{t("heatmapDesc")}</p>
+            </div>
+            <VisitHeatmap cells={heatmap} locale={locale} />
+          </CardContent>
+        </Card>
+        <Card className="h-full">
+          <CardContent className="flex h-full flex-col gap-3">
+            <div>
+              <span className="font-heading text-sm font-medium">{t("activityTitle")}</span>
+              <p className="text-xs text-muted-foreground">{t("activityDesc")}</p>
+            </div>
+            <RecentActivity rows={activity} socialTaps={socialTaps} locale={locale} />
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Middle section: chart fills full width */}
       <div className="flex min-h-0 flex-1 flex-col gap-2 lg:overflow-hidden">
         <div className="flex shrink-0 items-center justify-between">
@@ -531,7 +590,7 @@ export default async function DashboardPage({
       <div className="grid shrink-0 gap-3 lg:grid-cols-4">
         <ExpandableSection
           title={t("topLinks")}
-          description={t("topLinksDesc", { count: stats.topLinks.length })}
+          description={t("topLinksDesc", { count: linkRates.links.length })}
           compact={
             <Card className="h-full">
               <CardContent className="relative flex h-full flex-col gap-3">
@@ -542,14 +601,29 @@ export default async function DashboardPage({
                 <div className="flex items-center justify-between">
                   <span className="font-heading text-sm font-medium">{t("topLinks")}</span>
                   <span className="text-xs text-muted-foreground">
-                    {stats.topLinks.length}
+                    {linkRates.links.length}
                   </span>
                 </div>
-                <TopLinksList links={stats.topLinks} max={4} noClicksLabel={t("noClicksYet")} />
+                <TopLinksList
+                  links={linkRates.links}
+                  max={4}
+                  noClicksLabel={t("noClicksYet")}
+                  nudge={
+                    linkRates.nudge
+                      ? t("ctrNudge", linkRates.nudge)
+                      : null
+                  }
+                />
               </CardContent>
             </Card>
           }
-          expanded={<TopLinksList links={stats.topLinks} noClicksLabel={t("noClicksYet")} />}
+          expanded={
+            <TopLinksList
+              links={linkRates.links}
+              noClicksLabel={t("noClicksYet")}
+              nudge={linkRates.nudge ? t("ctrNudge", linkRates.nudge) : null}
+            />
+          }
         />
 
         <ExpandableSection

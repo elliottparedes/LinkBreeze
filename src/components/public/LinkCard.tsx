@@ -9,6 +9,8 @@ interface LinkCardProps {
   baseDelayMs?: number;
   /** Page slug — resolves native vCard links to /api/vcard/<slug>. */
   pageSlug?: string | null;
+  /** Campaign tag (`?s=`) forwarded onto the click URL. */
+  source?: string | null;
 }
 
 /**
@@ -19,8 +21,8 @@ interface LinkCardProps {
  * static HTML untouched. This keeps the public page 100% client-JS-free while
  * still tracking outbound clicks.
  */
-export function LinkCard({ link, index, theme, baseDelayMs = 0, pageSlug }: LinkCardProps) {
-  const html = buildLinkCardHtml({ link, theme, index, baseDelayMs, pageSlug });
+export function LinkCard({ link, index, theme, baseDelayMs = 0, pageSlug, source }: LinkCardProps) {
+  const html = buildLinkCardHtml({ link, theme, index, baseDelayMs, pageSlug, source });
 
   return <div dangerouslySetInnerHTML={{ __html: html }} />;
 }

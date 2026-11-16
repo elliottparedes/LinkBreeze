@@ -105,10 +105,11 @@ describe("click-path query count (#81 E.5)", () => {
 
     expect(plainCount).toBeGreaterThanOrEqual(1);
     expect(variantCount).toBe(plainCount); // label rides the same INSERT
-    // Measured warm cost = 6 (tx begin/commit + click insert + counter bump
-    // + dedup/lookup internals). Exact, not a range: any added query fails
-    // this line and forces a conscious ceiling update = the regression gate.
-    expect(variantCount).toBe(6);
+    // Measured warm cost = 7 (tx begin/commit + click insert + counter bump
+    // + dedup/lookup internals + the social-tap prune delete). Exact, not a
+    // range: any added query fails this line and forces a conscious ceiling
+    // update = the regression gate.
+    expect(variantCount).toBe(7);
   });
 
   it("per-click cost is FLAT as link count and click history grow 10x (N+1 tripwire)", async () => {
@@ -135,9 +136,10 @@ describe("click-path query count (#81 E.5)", () => {
 
     expect(baseline).toBeGreaterThanOrEqual(2); // sanity: both ops seen
     expect(grown).toBe(baseline); // flat — no N+1, no history scan
-    // Warm measured total = 7 (getLinkByRef 1 + recordClick 6). Exact pin:
-    // history/link growth must not move it, and an N+1 fails it immediately.
-    expect(grown).toBe(7);
+    // Warm measured total = 8 (getLinkByRef 1 + recordClick 7, including the
+    // social-tap prune delete). Exact pin: history/link growth must not move
+    // it, and an N+1 fails it immediately.
+    expect(grown).toBe(8);
   });
 
   it("E.14: getLinkStats costs the same with a test as without, flat vs history", async () => {

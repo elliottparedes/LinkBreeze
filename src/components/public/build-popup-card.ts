@@ -2,6 +2,7 @@ import type { LinkRow } from "@/server/queries";
 import { mapEmbedSrc } from "@/lib/link-url";
 import { renderMarkdownLiteString } from "@/lib/markdown-lite-string";
 import type { ThemeInput } from "@/lib/theme-tokens";
+import { appendSource } from "@/lib/traffic-source";
 
 /**
  * #93 popup cards — text + location types.
@@ -72,7 +73,11 @@ export const POPUP_CLOSE = esc("this.closest('dialog').close('x')");
  * the theme's linkStyle so skin rules reach the dialog even where the
  * page-level mode classes (lb-gel-mode / lb-pixel-mode) don't apply.
  */
-export function buildPopupDialogHtml(link: LinkRow, theme?: ThemeInput): string {
+export function buildPopupDialogHtml(
+  link: LinkRow,
+  theme?: ThemeInput,
+  source?: string | null,
+): string {
   const isLocation = link.type === "location";
   const mapSrc = isLocation ? mapEmbedSrc(link.url) : null;
 
@@ -90,7 +95,7 @@ export function buildPopupDialogHtml(link: LinkRow, theme?: ThemeInput): string 
   const hasUrl = !!link.url.trim();
   const ctaHtml =
     ctaLabel && hasUrl
-      ? `<a class="lb-popup-cta lb-gel-btn lb-pixel-clip lb-pixel-shadow" href="/go/${link.redirectSlug || link.id}" target="_blank" rel="noopener noreferrer nofollow" style="background:var(--lb-accent);color:var(--lb-btn-text, #ffffff);border:var(--lb-border-width) solid var(--lb-card-border);border-radius:var(--lb-card-radius)">${esc(ctaLabel)}</a>`
+      ? `<a class="lb-popup-cta lb-gel-btn lb-pixel-clip lb-pixel-shadow" href="${appendSource(`/go/${link.redirectSlug || link.id}`, source)}" target="_blank" rel="noopener noreferrer nofollow" style="background:var(--lb-accent);color:var(--lb-btn-text, #ffffff);border:var(--lb-border-width) solid var(--lb-card-border);border-radius:var(--lb-card-radius)">${esc(ctaLabel)}</a>`
       : "";
 
   // Location map: full-bleed at the top, src attached lazily on open so no

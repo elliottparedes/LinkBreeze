@@ -391,6 +391,8 @@ export const analyticsPageviews = sqliteTable("analytics_pageviews", {
   referrer: text("referrer"),
   country: text("country"),
   deviceType: text("device_type"),
+  /** Campaign tag from `?s=` (ig, tiktok, yt, x, newsletter, qr). Null = untagged. */
+  source: text("source"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
@@ -406,6 +408,18 @@ export const analyticsClicks = sqliteTable("analytics_clicks", {
   // had no test active for this click (or predates the column). Permanent
   // history: promote-to-winner archives the test but never rewrites rows.
   variant: text("variant"),
+  /** Campaign tag carried from the public page (`?s=` on /go). */
+  source: text("source"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/** Icon-row taps. Kept off analytics_clicks so they never inflate link CTR. */
+export const analyticsSocialClicks = sqliteTable("analytics_social_clicks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  pageId: integer("page_id"),
+  platform: text("platform").notNull(),
+  visitorHash: text("visitor_hash").notNull(),
+  source: text("source"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 

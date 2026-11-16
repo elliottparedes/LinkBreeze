@@ -8,6 +8,7 @@ import {
 } from "@/lib/qr";
 import { getSetting, getPageBySlug } from "@/server/queries";
 import { rateLimit } from "@/lib/rate-limit";
+import { pageShareUrl } from "@/lib/traffic-source";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing slug" }, { status: 400 });
   }
 
-  const targetUrl = `${getOrigin(request)}/${slug}`;
+  const targetUrl = pageShareUrl(getOrigin(request), slug, "qr");
 
   // Saved per-page style (absent/garbage → defaults), then query overrides.
   const page = await getPageBySlug(slug);

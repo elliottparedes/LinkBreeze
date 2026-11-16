@@ -338,7 +338,23 @@ describe("bot/crawler interaction (#41 x #81, E.31)", () => {
     const res = await GET(makeRequest("7"), { params: Promise.resolve({ id: "7" }) });
     expect(res.headers.get("location")).toBe("https://example.com/b");
     expect(mocks.recordClick).toHaveBeenCalledTimes(1);
-    expect(mocks.recordClick).toHaveBeenCalledWith(7, "hash", "", "click", "B");
+    expect(mocks.recordClick).toHaveBeenCalledWith(7, "hash", "", "click", "B", null);
+  });
+
+  it("forwards a known ?s= tag onto the recorded click and drops anything else", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    mocks.getLinkByRef.mockResolvedValue(activeLink({ url: "https://example.com/x" }));
+    const tagged = await GET(new NextRequest("http://localhost:3000/go/7?s=IG"), {
+      params: Promise.resolve({ id: "7" }),
+    });
+    expect(tagged.status).toBe(302);
+    expect(mocks.recordClick).toHaveBeenCalledWith(7, "hash", "", "click", null, "ig");
+
+    mocks.recordClick.mockClear();
+    await GET(new NextRequest("http://localhost:3000/go/7?s=not-a-tag"), {
+      params: Promise.resolve({ id: "7" }),
+    });
+    expect(mocks.recordClick).toHaveBeenCalledWith(7, "hash", "", "click", null, null);
   });
 
   it("a crawler still gets a fair split but its click is never recorded (guide FAQ claim)", async () => {
@@ -424,7 +440,7 @@ describe("bot/crawler interaction (#41 x #81, E.31)", () => {
     expect(res.headers.get("location")).toBe("https://example.com/b");
     expect(mocks.recordClick).toHaveBeenCalledTimes(1);
     // Server assignment, not any forged claim, reaches the analytics write.
-    expect(mocks.recordClick).toHaveBeenCalledWith(7, "hash", "", "click", "B");
+    expect(mocks.recordClick).toHaveBeenCalledWith(7, "hash", "", "click", "B", null);
   });
 
   it("E.41: interleaved /go requests keep each link's label in its own request (no cross-link leak)", async () => {

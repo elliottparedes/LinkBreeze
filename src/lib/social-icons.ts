@@ -66,6 +66,12 @@ export function getPlatformLabel(platform: SocialPlatform): string {
   return PLATFORM_LABELS[platform] ?? platform;
 }
 
+const PLATFORM_SET = new Set<string>([...SUPPORTED_PLATFORMS, "twitter"]);
+
+export function isSocialPlatform(value: string): value is SocialPlatform {
+  return PLATFORM_SET.has(value);
+}
+
 interface Rule {
   platform: SocialPlatform;
   test: (host: string, value: string) => boolean;

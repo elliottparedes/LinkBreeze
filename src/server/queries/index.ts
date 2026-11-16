@@ -11,6 +11,7 @@ import {
   customFonts,
   analyticsPageviews,
   analyticsClicks,
+  analyticsSocialClicks,
   subscribers,
   roles,
   oidcIdentities,
@@ -253,6 +254,7 @@ export async function deletePage(id: number, wipe = false): Promise<void> {
     }
     // Clear pageId on analytics rows (keep historical data, disassociate page).
     tx.update(analyticsPageviews).set({ pageId: null }).where(eq(analyticsPageviews.pageId, id)).run();
+    tx.update(analyticsSocialClicks).set({ pageId: null }).where(eq(analyticsSocialClicks.pageId, id)).run();
     tx.delete(linkSections).where(eq(linkSections.pageId, id)).run();
     tx.delete(pages).where(eq(pages.id, id)).run();
   });
@@ -1317,6 +1319,7 @@ async function pruneAnalyticsIfDue(): Promise<void> {
   const cutoff = sql`datetime('now', ${`-${days} days`})`;
   db.delete(analyticsPageviews).where(lt(analyticsPageviews.createdAt, cutoff)).run();
   db.delete(analyticsClicks).where(lt(analyticsClicks.createdAt, cutoff)).run();
+  db.delete(analyticsSocialClicks).where(lt(analyticsSocialClicks.createdAt, cutoff)).run();
 }
 
 export async function recordPageview(
@@ -1325,6 +1328,7 @@ export async function recordPageview(
   deviceType: string | null,
   country: string | null,
   pageId?: number,
+  source?: string | null,
 ): Promise<void> {
   await db.insert(analyticsPageviews).values({
     visitorHash,
@@ -1332,6 +1336,7 @@ export async function recordPageview(
     deviceType: deviceType ?? null,
     country: country ?? null,
     pageId: pageId ?? null,
+    source: source ?? null,
   });
   await pruneAnalyticsIfDue();
 }
@@ -1342,6 +1347,7 @@ export async function recordClick(
   referrer: string | null,
   eventType: "click" | "open" = "click",
   variant: "A" | "B" | null = null,
+  source: string | null = null,
 ): Promise<void> {
   // Wrap in a transaction so the analytics insert and the denormalized
   // clicksCount increment can't drift apart if one fails.
@@ -1352,6 +1358,7 @@ export async function recordClick(
       referrer: referrer ?? null,
       eventType,
       variant,
+      source: source ?? null,
     }).run();
     // Popup opens are analytics-only: the denormalized counter stays a pure
     // outbound-click count (#93) so the links table never inflates CTR.
@@ -1364,6 +1371,22 @@ export async function recordClick(
   });
   // Same opportunistic prune as pageviews, so click-heavy pages (e.g. a page
   // embedded somewhere that skips the pageview beacon) don't retain forever.
+  await pruneAnalyticsIfDue();
+}
+
+/** Icon-row tap. Separate from link clicks so CTR stays a link metric. */
+export async function recordSocialClick(
+  pageId: number,
+  platform: string,
+  visitorHash: string,
+  source: string | null,
+): Promise<void> {
+  await db.insert(analyticsSocialClicks).values({
+    pageId,
+    platform,
+    visitorHash,
+    source: source ?? null,
+  });
   await pruneAnalyticsIfDue();
 }
 

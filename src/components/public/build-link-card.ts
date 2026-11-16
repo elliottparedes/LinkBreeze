@@ -7,6 +7,7 @@ import {
   buildPopupDialogHtml,
   DEFAULT_POPUP_ICON,
 } from "@/components/public/build-popup-card";
+import { appendSource } from "@/lib/traffic-source";
 
 export type LinkCardTheme = ThemeInput;
 
@@ -112,7 +113,7 @@ function esc(s: string): string {
  * For other link types (mailto, tel, etc.): keep the direct href and fire
  * sendBeacon for best-effort tracking.
  */
-function resolveLinkUrl(link: LinkRow, pageSlug?: string | null): {
+function resolveLinkUrl(link: LinkRow, pageSlug?: string | null, source?: string | null): {
   href: string;
   targetAttr: string;
   onclickAttr: string;
@@ -136,13 +137,16 @@ function resolveLinkUrl(link: LinkRow, pageSlug?: string | null): {
     rawUrl.startsWith("http://") || rawUrl.startsWith("https://");
 
   // #96: prefer the custom redirect slug — stable across delete-and-recreate.
-  const href = isExternal ? `/go/${link.redirectSlug || link.id}` : esc(rawUrl);
+  const href = isExternal
+    ? appendSource(`/go/${link.redirectSlug || link.id}`, source)
+    : esc(rawUrl);
   const targetAttr = isExternal
     ? ` target="_blank" rel="noopener noreferrer nofollow"`
     : "";
+  const sourceArg = source ? `,source:'${source}'` : "";
   const clickHandler = isExternal
     ? ""
-    : `navigator.sendBeacon('/api/track', JSON.stringify({type:'click',linkId:${link.id}}))`;
+    : `navigator.sendBeacon('/api/track', JSON.stringify({type:'click',linkId:${link.id}${sourceArg}}))`;
   const onclickAttr = clickHandler ? `\n  onclick="${clickHandler}"` : "";
 
   return { href, targetAttr, onclickAttr };
@@ -204,8 +208,10 @@ export function buildLinkCardHtml(options: {
   baseDelayMs?: number;
   /** Page slug — resolves native vCard links to /api/vcard/<slug>. */
   pageSlug?: string | null;
+  /** Campaign tag (`?s=`) forwarded onto /go and the click beacon. */
+  source?: string | null;
 }): string {
-  const { link, theme, index, staggerMs = 60, baseDelayMs = 0, pageSlug } = options;
+  const { link, theme, index, staggerMs = 60, baseDelayMs = 0, pageSlug, source } = options;
 
   const linkStyle = theme.linkStyle || "glass";
   const hoverEffect = theme.hoverEffect || theme.animationType || "lift";
@@ -241,7 +247,7 @@ export function buildLinkCardHtml(options: {
       ? ""
       : revealAnimation(theme.animationType, baseDelayMs + index * staggerMs);
 
-  const { href, targetAttr, onclickAttr } = resolveLinkUrl(link, pageSlug);
+  const { href, targetAttr, onclickAttr } = resolveLinkUrl(link, pageSlug, source);
 
   // CSS-based hover effects (class + data attributes) — replaces inline
   // onmouseover/onmouseout so prefers-reduced-motion can gate them.
@@ -296,7 +302,7 @@ export function buildLinkCardHtml(options: {
   // (a shorthand) would reset the font-family set in ${style} — restore
   // everything EXCEPT family with longhands so --lb-card-font survives.
   const isPopup = isPopupType(link.type);
-  const dialogHtml = isPopup ? buildPopupDialogHtml(link, theme) : "";
+  const dialogHtml = isPopup ? buildPopupDialogHtml(link, theme, source) : "";
   const cardOpen = (style: string): string =>
     isPopup
       ? `<button type="button"${hoverAttrs} aria-haspopup="dialog" aria-controls="lb-popup-${link.id}" onclick="${popupOpenHandler(link)}" style="${style};cursor:pointer;font-style:inherit;font-variant:inherit;font-weight:inherit;font-stretch:inherit;font-size:inherit;line-height:inherit;text-align:left">`

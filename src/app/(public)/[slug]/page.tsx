@@ -44,6 +44,7 @@ import {
 } from "@/lib/theme-tokens";
 import { parseCustomFontId, buildFontFaceCss } from "@/lib/custom-fonts";
 import { decodeSlugParam } from "@/lib/link-slug";
+import { parseTrafficSource } from "@/lib/traffic-source";
 
 export const revalidate = 60;
 
@@ -168,9 +169,13 @@ export async function generateMetadata({
   };
 }
 
-export default async function PublicPage({ params }: PageProps) {
-  const { slug: rawSlug } = await params;
+export default async function PublicPage({
+  params,
+  searchParams,
+}: PageProps & { searchParams: Promise<{ s?: string | string[] }> }) {
+  const [{ slug: rawSlug }, query] = await Promise.all([params, searchParams]);
   const slug = decodeSlugParam(rawSlug);
+  const source = parseTrafficSource(Array.isArray(query.s) ? query.s[0] : query.s);
   const page = await getPageBySlug(slug);
 
   if (!page) {
@@ -201,7 +206,7 @@ export default async function PublicPage({ params }: PageProps) {
       const country = getCountry(h);
       const viewRl = rateLimit(`view:${ip}`, 1, 30_000);
       if (viewRl.ok) {
-        await recordPageview(visitorHash, referrer, deviceType, country, page.id);
+        await recordPageview(visitorHash, referrer, deviceType, country, page.id, source);
         // #83: opportunistic scheduled-backup trigger (fire-and-forget,
         // throttled to one settings-read per minute inside the scheduler).
         maybeRunScheduledBackup();
@@ -395,7 +400,7 @@ export default async function PublicPage({ params }: PageProps) {
 
         {socialLinks.length > 0 ? (
           <div className="mb-8 mt-6" style={socialsReveal as React.CSSProperties}>
-            <SocialIcons socialLinks={socialLinks} theme={themeInput} />
+            <SocialIcons socialLinks={socialLinks} theme={themeInput} pageId={page.id} source={source} />
           </div>
         ) : null}
 
@@ -438,6 +443,7 @@ export default async function PublicPage({ params }: PageProps) {
                       baseDelayMs={delays[gi]?.links[li] ?? 0}
                       theme={themeInput}
                       pageSlug={slug}
+                      source={source}
                     />
                   ),
                 )}

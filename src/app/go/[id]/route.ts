@@ -14,6 +14,7 @@ import {
   resolveVariantUrl,
   type AbVariant,
 } from "@/lib/ab-test";
+import { parseTrafficSource } from "@/lib/traffic-source";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -132,8 +133,9 @@ export async function GET(
         const referrer = stripReferrer(
           (h.get("referer") || h.get("referrer") || "").toString(),
         );
+        const source = parseTrafficSource(request.nextUrl.searchParams.get("s"));
         // #81: attribute the click to its variant (null = no running test).
-        await recordClick(linkId, visitorHash, referrer, "click", variant);
+        await recordClick(linkId, visitorHash, referrer, "click", variant, source);
         // #83: opportunistic scheduled-backup trigger (throttled inside the
         // scheduler; must never delay the redirect — fire-and-forget).
         maybeRunScheduledBackup();

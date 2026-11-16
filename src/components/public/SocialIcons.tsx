@@ -6,10 +6,14 @@ import {
 } from "@/lib/social-icons";
 import type { ThemeInput } from "@/lib/theme-tokens";
 import type { SocialLink } from "@/server/queries";
+import { appendSource } from "@/lib/traffic-source";
 
 interface SocialIconsProps {
   socialLinks: SocialLink[];
   theme?: ThemeInput;
+  pageId: number;
+  /** Campaign tag (`?s=`) forwarded onto the tap URL. */
+  source?: string | null;
 }
 
 /**
@@ -20,7 +24,7 @@ interface SocialIconsProps {
  * In pixel mode, each icon is wrapped in a two-layer structure:
  * outer div = orange border, inner div = card-bg, both with clip-path.
  */
-export function SocialIcons({ socialLinks, theme }: SocialIconsProps) {
+export function SocialIcons({ socialLinks, theme, pageId, source }: SocialIconsProps) {
   if (!socialLinks || socialLinks.length === 0) return null;
 
   const isPixel = theme?.linkStyle === "pixel";
@@ -32,8 +36,9 @@ export function SocialIcons({ socialLinks, theme }: SocialIconsProps) {
     >
       {socialLinks.map((item) => {
         const platform = (item.platform as SocialPlatform) || "email";
-        const href = normalizeSocialUrl(platform, item.url || "");
-        if (!href) return null;
+        const direct = normalizeSocialUrl(platform, item.url || "");
+        if (!direct) return null;
+        const href = appendSource(`/go/icon/${pageId}/${platform}`, source);
         const svg = getSocialIconSvg(platform);
         const label = getPlatformLabel(platform);
 

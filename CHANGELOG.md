@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Campaign analytics on the dashboard** — a visit can carry a short tag (`?s=ig`, `tiktok`, `yt`, `x`, `newsletter`, `qr`) so Instagram, TikTok, and YouTube traffic is visible even when those apps send no referrer. The dashboard shows copy buttons for each tagged link, each link's click-through rate against page views (and a one-line nudge when a lower link converts better than the one at the top of the page), a UTC day-and-hour heatmap, and a recent-activity list. Social-icon taps now go through `/go/icon/:pageId/:platform`, are counted on their own, and never inflate link clicks. QR codes open the page with `?s=qr`. Ships as migration `0038_analytics_sources`.
+
 ## [1.6.0] - 2026-11-11
 
 ### Added

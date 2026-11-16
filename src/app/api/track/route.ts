@@ -6,12 +6,13 @@ import { isBot } from "@/lib/bot-detect";
 import { getSession } from "@/lib/auth";
 import { recordClick } from "@/server/queries";
 import { maybeRunScheduledBackup } from "@/server/backup-scheduler";
+import { parseTrafficSource } from "@/lib/traffic-source";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  let body: { type?: string; linkId?: number; referrer?: string };
+  let body: { type?: string; linkId?: number; referrer?: string; source?: string };
 
   try {
     body = await request.json();
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
           ? Number(formData.get("linkId"))
           : undefined,
         referrer: (formData.get("referrer") as string) || undefined,
+        source: (formData.get("source") as string) || undefined,
       };
     } catch {
       return NextResponse.json({ ok: false }, { status: 400 });
@@ -85,7 +87,8 @@ export async function POST(request: NextRequest) {
     if (typeof body.linkId !== "number" || Number.isNaN(body.linkId)) {
       return NextResponse.json({ ok: false, error: "Missing linkId" }, { status: 400 });
     }
-    await recordClick(body.linkId, visitorHash, referrer, type === "open" ? "open" : "click");
+    const source = parseTrafficSource(typeof body.source === "string" ? body.source : null);
+    await recordClick(body.linkId, visitorHash, referrer, type === "open" ? "open" : "click", null, source);
     // #83: opportunistic scheduled-backup trigger (throttled inside the
     // scheduler; fire-and-forget so the beacon response stays instant).
     maybeRunScheduledBackup();
