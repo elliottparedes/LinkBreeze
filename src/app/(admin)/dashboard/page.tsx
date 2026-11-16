@@ -26,8 +26,6 @@ import {
   getAnalyticsBreakdown,
   getAnalyticsRetentionDays,
   getActiveTheme,
-  getProfile,
-  getSetting,
   getSubscriberCount,
   getCapabilitiesForUser,
   type AnalyticsRange,
@@ -35,7 +33,7 @@ import {
 } from "@/server/queries";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { filterVisiblePages } from "@/lib/ownership";
+import { pickVisiblePage } from "@/lib/ownership";
 import { checkForUpdates } from "@/lib/update-check";
 import { maybeRunScheduledBackup, getBackupStatus } from "@/server/backup-scheduler";
 import { BackupFailureNotice } from "./backup-failure-notice";
@@ -329,22 +327,21 @@ export default async function DashboardPage({
   const { caps } = await getCapabilitiesForUser(session.userId);
   const canManageInstance = caps.manageInstance;
   const allPages = await getAllPages();
-  const visiblePages = filterVisiblePages(allPages, caps, session.userId);
-  const activePage =
-    visiblePages.find((p) => p.id === Number(pageParam)) ??
-    visiblePages.find((p) => p.isDefault) ??
-    visiblePages[0];
+  const activePage = pickVisiblePage(
+    allPages,
+    caps,
+    session.userId,
+    pageParam ? Number(pageParam) : null,
+  );
   const pageId = activePage?.id;
 
-  const [stats, prevStats, links, breakdown, updateResult, profile, activeTheme, slug, retentionDays] = await Promise.all([
+  const [stats, prevStats, links, breakdown, updateResult, activeTheme, retentionDays] = await Promise.all([
     getDashboardStats(range, pageId),
     getPreviousStats(range, pageId),
     getAllLinks(pageId),
     getAnalyticsBreakdown(range, pageId),
     checkForUpdates(),
-    getProfile(),
     getActiveTheme(),
-    getSetting("slug"),
     getAnalyticsRetentionDays(),
   ]);
 
@@ -389,7 +386,7 @@ export default async function DashboardPage({
       {/* Onboarding checklist — auto-hides when all done or dismissed */}
       <OnboardingChecklist
         hasLinks={activeCount > 0}
-        hasDisplayName={(profile?.displayName?.length ?? 0) > 0}
+        hasDisplayName={(activePage?.title?.length ?? 0) > 0}
         hasTheme={activeTheme !== null}
       />
 
@@ -405,10 +402,10 @@ export default async function DashboardPage({
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {t.rich("welcomeBody", {
-                slug: slug ?? "u",
+                slug: activePage?.slug ?? "u",
                 a: (chunk) => (
                   <a
-                    href={`/${slug ?? "u"}`}
+                    href={`/${activePage?.slug ?? "u"}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-violet underline"
@@ -421,17 +418,19 @@ export default async function DashboardPage({
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Link
-              href="/links"
+              href={pageId ? `/links?page=${pageId}` : "/links"}
               className="inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet/90"
             >
               <Plus className="size-4" /> {t("addFirstLink")}
             </Link>
-            <Link
-              href="/settings?tab=data"
-              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
-            >
-              <DownloadCloud className="size-4" /> {t("importExisting")}
-            </Link>
+            {canManageInstance ? (
+              <Link
+                href="/settings?tab=data"
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                <DownloadCloud className="size-4" /> {t("importExisting")}
+              </Link>
+            ) : null}
           </div>
         </div>
       ) : (
@@ -462,13 +461,15 @@ export default async function DashboardPage({
               {t("subscribersLink", { count: subscriberCount })}
             </Link>
           )}
-          <a
-            href={`/api/analytics/export?range=${range}&metric=views`}
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted"
-          >
-            <Download className="size-4" />
-            <span className="hidden sm:inline">{t("exportCsv")}</span>
-          </a>
+          {canManageInstance ? (
+            <a
+              href={`/api/analytics/export?range=${range}&metric=views`}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted"
+            >
+              <Download className="size-4" />
+              <span className="hidden sm:inline">{t("exportCsv")}</span>
+            </a>
+          ) : null}
           <RangePicker current={range} />
         </div>
       </div>

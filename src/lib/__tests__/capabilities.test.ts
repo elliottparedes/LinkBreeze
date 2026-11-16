@@ -18,6 +18,10 @@ import {
   canViewPage,
   canEditPage,
   filterVisiblePages,
+  pickVisiblePage,
+  showPageSwitcher,
+  MEMBER_CAPABILITIES,
+  ADMIN_CAPABILITIES,
   type RoleRowLike,
 } from "@/lib/ownership";
 
@@ -130,6 +134,38 @@ describe("filterVisiblePages (admin page switcher / dashboard scoping)", () => {
 
   it("full admin sees every page", () => {
     expect(filterVisiblePages(pages, adminCaps, 1)).toHaveLength(3);
+  });
+});
+
+describe("showPageSwitcher", () => {
+  it("hides the section for a one-page member", () => {
+    expect(showPageSwitcher(MEMBER_CAPABILITIES)).toBe(false);
+  });
+
+  it("shows it for admins and for roles that may own more than one page", () => {
+    expect(showPageSwitcher(ADMIN_CAPABILITIES)).toBe(true);
+    expect(showPageSwitcher({ ...MEMBER_CAPABILITIES, pagesLimit: 3 })).toBe(true);
+    expect(showPageSwitcher({ ...MEMBER_CAPABILITIES, pagesLimit: null })).toBe(true);
+    expect(showPageSwitcher({ ...MEMBER_CAPABILITIES, visibility: "view_all" })).toBe(true);
+  });
+});
+
+describe("pickVisiblePage", () => {
+  const pages = [
+    { id: 10, slug: "alice", userId: 10, isDefault: true },
+    { id: 20, slug: "bob", userId: 20, isDefault: false },
+  ];
+  const memberCaps = { pagesLimit: 1, visibility: "own" as const, manageAccounts: false, manageInstance: false };
+  const adminCaps = { pagesLimit: null, visibility: "manage_all" as const, manageAccounts: true, manageInstance: true };
+
+  it("does not hand a member the instance default page", () => {
+    expect(pickVisiblePage(pages, memberCaps, 20, 10)?.id).toBe(20);
+    expect(pickVisiblePage(pages, memberCaps, 20)?.slug).toBe("bob");
+  });
+
+  it("lets an admin open the requested page, else the default", () => {
+    expect(pickVisiblePage(pages, adminCaps, 1, 20)?.id).toBe(20);
+    expect(pickVisiblePage(pages, adminCaps, 1)?.id).toBe(10);
   });
 });
 

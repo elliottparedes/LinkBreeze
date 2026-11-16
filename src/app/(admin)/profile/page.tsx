@@ -1,5 +1,7 @@
-import { getAllPages, getDefaultPage, getOidcIdentitiesForUser, type SocialLink } from "@/server/queries";
+import { redirect } from "next/navigation";
+import { getAllPages, getOidcIdentitiesForUser, getCapabilitiesForUser, type SocialLink } from "@/server/queries";
 import { getSession } from "@/lib/auth";
+import { pickVisiblePage } from "@/lib/ownership";
 import { oidcAccountLinkingSupported } from "@/server/actions/oidc";
 import { ProfileForm } from "./profile-form";
 import { SsoIdentitiesCard } from "./sso-identities-card";
@@ -12,19 +14,16 @@ export default async function ProfilePage({
   searchParams: Promise<{ page?: string }>;
 }) {
   const { page: pageParam } = await searchParams;
-
-  // Resolve active page.
-  const [allPages, defaultPage] = await Promise.all([
-    getAllPages(),
-    getDefaultPage(),
-  ]);
-  let activePage;
-  if (pageParam) {
-    activePage = allPages.find((p) => p.id === Number(pageParam));
-  }
-  if (!activePage) {
-    activePage = defaultPage ?? allPages[0];
-  }
+  const session = await getSession();
+  if (!session) redirect("/login");
+  const { caps } = await getCapabilitiesForUser(session.userId);
+  const allPages = await getAllPages();
+  const activePage = pickVisiblePage(
+    allPages,
+    caps,
+    session.userId,
+    pageParam ? Number(pageParam) : null,
+  );
 
   let socialLinks: SocialLink[] = [];
   try {
@@ -33,7 +32,6 @@ export default async function ProfilePage({
     socialLinks = [];
   }
 
-  const session = await getSession();
   const [identities, linkingSupported] = session
     ? await Promise.all([
         getOidcIdentitiesForUser(session.userId),

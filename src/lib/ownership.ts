@@ -90,6 +90,13 @@ export const MEMBER_CAPABILITIES: RoleCapabilities = {
   manageInstance: false,
 };
 
+/** The Pages switcher is for people who can open more than one page.
+ *  A one-page member has nothing to switch, so the section stays hidden. */
+export function showPageSwitcher(caps: RoleCapabilities): boolean {
+  if (caps.visibility !== "own") return true;
+  return caps.pagesLimit == null || caps.pagesLimit > 1;
+}
+
 const VISIBILITIES: PageVisibility[] = ["own", "view_all", "manage_all"];
 
 function toVisibility(raw: string): PageVisibility {
@@ -170,4 +177,25 @@ export function filterVisiblePages<
   if (caps.manageAccounts && caps.manageInstance) return pages;
   if (caps.visibility === "view_all" || caps.visibility === "manage_all") return pages;
   return pages.filter((p) => p.userId != null && p.userId === userId);
+}
+
+/**
+ * The page an admin screen should open. A requested id is used only when
+ * this actor may see it — otherwise a member would land on the instance
+ * default page (someone else's).
+ */
+export function pickVisiblePage<
+  T extends { id: number; isDefault?: boolean; userId?: number | null },
+>(
+  pages: T[],
+  caps: RoleCapabilities,
+  userId: number,
+  pageId?: number | null,
+): T | undefined {
+  const visible = filterVisiblePages(pages, caps, userId);
+  if (pageId != null && Number.isFinite(pageId)) {
+    const requested = visible.find((p) => p.id === pageId);
+    if (requested) return requested;
+  }
+  return visible.find((p) => p.isDefault) ?? visible[0];
 }

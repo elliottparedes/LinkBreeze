@@ -7,20 +7,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 const mocks = vi.hoisted(() => ({
   createApiKey: vi.fn(),
   revokeApiKey: vi.fn(),
-  getSession: vi.fn(),
+  requireInstanceAdmin: vi.fn(),
   revalidatePath: vi.fn(),
 }));
 vi.mock("@/server/api-keys", () => ({
   createApiKey: mocks.createApiKey,
   revokeApiKey: mocks.revokeApiKey,
 }));
-vi.mock("@/lib/auth", () => ({ getSession: mocks.getSession }));
+vi.mock("@/server/access", () => ({ requireInstanceAdmin: mocks.requireInstanceAdmin }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 
 import { generateApiKeyAction, revokeApiKeyAction } from "@/server/actions/api-keys";
 
 beforeEach(() => {
-  mocks.getSession.mockResolvedValue({ userId: 1, username: "admin" });
+  mocks.requireInstanceAdmin.mockResolvedValue(null);
   mocks.createApiKey.mockResolvedValue({
     key: "lbk_plaintext-once",
     prefix: "lbk_plain1",
@@ -35,11 +35,15 @@ afterEach(() => {
 });
 
 describe("generateApiKeyAction", () => {
-  it("requires a session", async () => {
-    mocks.getSession.mockResolvedValue(null);
+  it("requires an instance admin", async () => {
+    mocks.requireInstanceAdmin.mockResolvedValue({
+      success: false,
+      error: "Only instance admins can change instance settings",
+      errorCode: "forbidden",
+    });
     const res = await generateApiKeyAction();
     expect(res.success).toBe(false);
-    if (!res.success) expect(res.errorCode).toBe("unauthorized");
+    if (!res.success) expect(res.errorCode).toBe("forbidden");
     expect(mocks.createApiKey).not.toHaveBeenCalled();
   });
 
@@ -64,11 +68,15 @@ describe("generateApiKeyAction", () => {
 });
 
 describe("revokeApiKeyAction", () => {
-  it("requires a session and blocks in demo mode", async () => {
-    mocks.getSession.mockResolvedValue(null);
+  it("requires an instance admin and blocks in demo mode", async () => {
+    mocks.requireInstanceAdmin.mockResolvedValue({
+      success: false,
+      error: "Only instance admins can change instance settings",
+      errorCode: "forbidden",
+    });
     expect((await revokeApiKeyAction()).success).toBe(false);
+    mocks.requireInstanceAdmin.mockResolvedValue(null);
 
-    mocks.getSession.mockResolvedValue({ userId: 1, username: "admin" });
     process.env.DEMO_MODE = "true";
     const res = await revokeApiKeyAction();
     expect(res.success).toBe(false);

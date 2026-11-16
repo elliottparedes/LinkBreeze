@@ -35,6 +35,9 @@ interface ThemeManagerProps {
   active: ThemeRow | null;
   pageId?: number;
   pageThemeId?: number | null;
+  /** False when this page still uses a shared preset or the instance theme.
+   *  Edits then go through "save a copy" instead of changing that shared row. */
+  ownsTheme?: boolean;
   customFonts?: CustomFontMeta[];
   /** Per-upload background adjustment from the page row (Spec: Image-Positioning). */
   pageBgAdjustment?: { fit: string | null; posX: number | null; posY: number | null; zoom: number | null } | null;
@@ -46,6 +49,7 @@ export function ThemeManager({
   active,
   pageId,
   pageThemeId,
+  ownsTheme = true,
   customFonts = [],
   pageBgAdjustment = null,
 }: ThemeManagerProps) {
@@ -152,7 +156,7 @@ export function ThemeManager({
   // Each customizer change re-schedules a flush ~600ms out; the flush runs
   // the SAME savedAction path as an explicit save (refresh + preview reload).
   // Presets keep the explicit fork dialog — never autosaved.
-  const isCustom = active ? !active.isPreset : false;
+  const isCustom = Boolean(active && !active.isPreset && ownsTheme);
   // Latest pending state + the last flushed baseline, read at flush time via
   // a getter indirection (the linter forbids touching refs inside useMemo).
   const pendingFdRef = React.useRef<{ fd: FormData; saved: FormData | null } | null>(null);

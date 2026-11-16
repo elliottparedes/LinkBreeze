@@ -378,7 +378,10 @@ export function ThemeCustomizer({
             <Button
               type="button"
               disabled={forkPending || !forkName.trim()}
-              onClick={() => onFork(forkName.trim().slice(0, 100), formData())}
+              onClick={() => {
+                onFork(forkName.trim().slice(0, 100), formData());
+                setForkOpen(false);
+              }}
             >
               {forkPending ? t("creating") : t("createSave")}
             </Button>

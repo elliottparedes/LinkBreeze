@@ -1,15 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSession } from "@/lib/auth";
 import { demoGuard } from "@/lib/demo-guard";
 import {
   type ActionResult,
-  unauthorizedError,
   logError,
   ErrorCode,
 } from "@/lib/errors";
 import { createApiKey, revokeApiKey } from "@/server/api-keys";
+import { requireInstanceAdmin } from "@/server/access";
 
 /**
  * Generate (or rotate) the API key (#4). The plaintext is returned EXACTLY
@@ -23,7 +22,8 @@ export async function generateApiKeyAction(opts?: {
 }): Promise<ActionResult<{ key: string; prefix: string; createdAt: string }>> {
   const blocked = demoGuard();
   if (blocked) return blocked;
-  if (!(await getSession())) return unauthorizedError();
+  const denied = await requireInstanceAdmin();
+  if (denied) return denied;
 
   try {
     const created = await createApiKey({
@@ -45,7 +45,8 @@ export async function generateApiKeyAction(opts?: {
 export async function revokeApiKeyAction(): Promise<ActionResult> {
   const blocked = demoGuard();
   if (blocked) return blocked;
-  if (!(await getSession())) return unauthorizedError();
+  const denied = await requireInstanceAdmin();
+  if (denied) return denied;
 
   try {
     await revokeApiKey();

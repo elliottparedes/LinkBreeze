@@ -9,7 +9,7 @@ import { MobileTabBar } from "@/components/admin/MobileTabBar";
 import { MobileHeaderActions } from "@/components/admin/MobileHeaderActions";
 import { PageSwitcher } from "@/components/admin/PageSwitcher";
 import { getCapabilitiesForUser } from "@/server/queries";
-import { filterVisiblePages } from "@/lib/ownership";
+import { filterVisiblePages, showPageSwitcher } from "@/lib/ownership";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { getUpdateStatus } from "@/lib/update-check";
 import { PreviewProvider } from "@/components/admin/PreviewPane";
@@ -64,6 +64,7 @@ export default async function AdminLayout({
   const capsForUser = await getCapabilitiesForUser(session.userId);
   const allPages = await getAllPages();
   const visiblePages = filterVisiblePages(allPages, capsForUser.caps, session.userId);
+  const showPages = showPageSwitcher(capsForUser.caps);
   const pageList = visiblePages.map((p) => ({
     id: p.id,
     slug: p.slug,
@@ -96,6 +97,7 @@ export default async function AdminLayout({
               pages={pageList}
               canManageAccounts={capsForUser.caps.manageAccounts}
               canManageInstance={capsForUser.caps.manageInstance}
+              showPages={showPages}
               update={{
                 hasUpdate: updateStatus.hasUpdate,
                 latestVersion: updateStatus.latestVersion,
@@ -121,9 +123,11 @@ export default async function AdminLayout({
                 </a>
               </div>
               <div className="flex items-center gap-2">
-                <React.Suspense fallback={null}>
-                  <PageSwitcher pages={pageList} variant="compact" />
-                </React.Suspense>
+                {showPages ? (
+                  <React.Suspense fallback={null}>
+                    <PageSwitcher pages={pageList} variant="compact" canManageInstance={capsForUser.caps.manageInstance} />
+                  </React.Suspense>
+                ) : null}
                 <React.Suspense fallback={null}>
                   <MobileHeaderActions
                     canManageAccounts={capsForUser.caps.manageAccounts}

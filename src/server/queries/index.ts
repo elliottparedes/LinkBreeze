@@ -615,7 +615,7 @@ export async function getThemeById(id: number): Promise<ThemeRow | null> {
 }
 
 /** Pages rendering the given theme: pages with themeId set, plus every page when the theme is globally active. */
-export async function getPagesUsingTheme(themeId: number): Promise<{ id: number; slug: string }[]> {
+export async function getPagesUsingTheme(themeId: number): Promise<{ id: number; slug: string; userId: number | null }[]> {
   const [active] = await db
     .select({ id: themes.id })
     .from(themes)
@@ -623,10 +623,10 @@ export async function getPagesUsingTheme(themeId: number): Promise<{ id: number;
     .limit(1);
   // Globally active theme renders on every page without its own themeId.
   if (active?.id === themeId) {
-    return db.select({ id: pages.id, slug: pages.slug }).from(pages);
+    return db.select({ id: pages.id, slug: pages.slug, userId: pages.userId }).from(pages);
   }
   return db
-    .select({ id: pages.id, slug: pages.slug })
+    .select({ id: pages.id, slug: pages.slug, userId: pages.userId })
     .from(pages)
     .where(eq(pages.themeId, themeId));
 }

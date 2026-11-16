@@ -175,6 +175,14 @@ describe("updatePageAction", () => {
     expect(mocks.updatePage).toHaveBeenCalledWith(3, expect.objectContaining({ isDefault: true }));
   });
 
+  it("refuses a member changing the instance default page", async () => {
+    mocks.getSession.mockResolvedValue({ userId: 2, username: "member", exp: Date.now() + 60000, pv: 1 });
+    mocks.getPageById.mockResolvedValue({ id: 3, slug: "bob", userId: 2 });
+    const res = await updatePageAction(fd({ pageId: "3", isDefault: "true" }));
+    expect(res.success).toBe(false);
+    expect(mocks.updatePage).not.toHaveBeenCalled();
+  });
+
   it("preserves omitted fields like socialLinks during settings update", async () => {
     const res = await updatePageAction(fd({ pageId: "1", footerText: "New footer" }));
 

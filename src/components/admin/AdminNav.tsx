@@ -135,8 +135,7 @@ export function AdminNav({
   return (
     <nav className="relative flex flex-1 flex-col gap-1">
       {TOP_ITEMS.map(renderItem)}
-      {canManageInstance &&
-        renderItem({ href: "/theme", label: "theme", icon: Palette })}
+      {renderItem({ href: "/theme", label: "theme", icon: Palette })}
 
       {/* Settings group. The row only folds/unfolds — it is not a link.
           Rail: the icon opens the flyout with the group. */}

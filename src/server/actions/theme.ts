@@ -11,16 +11,71 @@ import {
   getPagesUsingTheme,
   duplicateTheme,
   deleteTheme,
+  getCapabilitiesForUser,
 } from "@/server/queries";
 import {
   type ActionResult,
   validationError,
   notFoundError,
   conflictError,
+  forbiddenError,
+  unauthorizedError,
   logError,
 } from "@/lib/errors";
 import { requireInstanceAdmin } from "@/server/access";
+import { getSession } from "@/lib/auth";
 import { parseCustomFontId } from "@/lib/custom-fonts";
+
+type ThemeActor =
+  | { admin: true; userId: number; username: string }
+  | { admin: false; userId: number; username: string };
+
+async function themeActor(): Promise<ThemeActor | null> {
+  const session = await getSession();
+  if (!session) return null;
+  const { caps } = await getCapabilitiesForUser(session.userId);
+  return {
+    admin: caps.manageInstance,
+    userId: session.userId,
+    username: session.username,
+  };
+}
+
+/** A member may edit a theme only when it is their private copy: not a
+ *  preset, not the instance default, and every page using it is theirs. */
+async function memberOwnsTheme(userId: number, themeId: number): Promise<boolean> {
+  const theme = await getThemeById(themeId);
+  if (!theme || theme.isPreset || theme.isActive) return false;
+  const using = await getPagesUsingTheme(themeId);
+  if (using.length === 0) return true;
+  return using.every((page) => page.userId === userId);
+}
+
+async function uniqueThemeName(base: string): Promise<string> {
+  const { themeNameExists } = await import("@/server/queries");
+  const root = base.trim().slice(0, 80) || "Theme";
+  for (let i = 1; i < 50; i++) {
+    const name = (i === 1 ? root : `${root} ${i}`).slice(0, 100);
+    if (!(await themeNameExists(name))) return name;
+  }
+  return `${root} ${Date.now()}`.slice(0, 100);
+}
+
+/**
+ * Theme id to store on a member's page. Shared presets and the instance
+ * default are copied first so a later edit cannot change anyone else's page.
+ */
+export async function claimThemeForMember(
+  themeId: number,
+  userId: number,
+  username: string,
+): Promise<number> {
+  const theme = await getThemeById(themeId);
+  if (!theme) return themeId;
+  if (await memberOwnsTheme(userId, themeId)) return themeId;
+  const created = await duplicateTheme(theme.id, await uniqueThemeName(`${theme.name} · ${username}`));
+  return created.id;
+}
 
 /** Revalidate the public paths of every page rendering this theme. */
 async function revalidateThemePages(themeId: number): Promise<void> {
@@ -63,9 +118,8 @@ export async function activateTheme(id: number): Promise<ActionResult> {
 export async function customizeActiveTheme(formData: FormData): Promise<ActionResult> {
   const blocked = demoGuard();
   if (blocked) return blocked;
-  // #124: capability gate — the role ROW decides, not the session hint.
-  const denied = await requireInstanceAdmin();
-  if (denied) return denied;
+  const actor = await themeActor();
+  if (!actor) return unauthorizedError();
 
   // Theme to edit: explicit id (page-specific theme or customizer target),
   // falling back to the globally active theme. Editing the global theme when
@@ -77,6 +131,9 @@ export async function customizeActiveTheme(formData: FormData): Promise<ActionRe
     ? await getThemeById(themeId)
     : await getActiveTheme();
   if (!target) return notFoundError("No theme to customise");
+  if (!actor.admin && !(await memberOwnsTheme(actor.userId, target.id))) {
+    return forbiddenError("This theme is shared. Save a copy to customise your own page.");
+  }
 
   const parsed = customSchema.safeParse({
     backgroundType: formData.get("backgroundType") || undefined,
@@ -176,9 +233,8 @@ export async function duplicateActiveTheme(
 ): Promise<ActionResult<{ themeId: number }>> {
   const blocked = demoGuard();
   if (blocked) return blocked;
-  // #124: capability gate — the role ROW decides, not the session hint.
-  const denied = await requireInstanceAdmin();
-  if (denied) return denied;
+  const actor = await themeActor();
+  if (!actor) return unauthorizedError();
 
   // Bug 2 fix: duplicate the theme shown in the customizer (page theme or
   // explicit id), not always the globally active one.
@@ -186,6 +242,9 @@ export async function duplicateActiveTheme(
     ? await getThemeById(themeId)
     : await getActiveTheme();
   if (!source) return notFoundError("No theme to duplicate");
+  if (!actor.admin && !source.isPreset && !source.isActive && !(await memberOwnsTheme(actor.userId, source.id))) {
+    return forbiddenError("You can only copy a preset or your own theme.");
+  }
 
   const trimmed = (name || "").trim().slice(0, 100);
   if (!trimmed) return validationError("Name is required");
@@ -212,9 +271,21 @@ export async function duplicateActiveTheme(
 export async function deleteCustomTheme(id: number): Promise<ActionResult> {
   const blocked = demoGuard();
   if (blocked) return blocked;
-  // #124: capability gate — the role ROW decides, not the session hint.
-  const denied = await requireInstanceAdmin();
-  if (denied) return denied;
+  const actor = await themeActor();
+  if (!actor) return unauthorizedError();
+  if (!actor.admin) {
+    const theme = await getThemeById(id);
+    const using = theme ? await getPagesUsingTheme(id) : [];
+    const exclusive =
+      Boolean(theme) &&
+      !theme!.isPreset &&
+      !theme!.isActive &&
+      using.length > 0 &&
+      using.every((page) => page.userId === actor.userId);
+    if (!exclusive) {
+      return forbiddenError("You can only delete a theme used by your own page.");
+    }
+  }
   if (typeof id !== "number" || Number.isNaN(id)) {
     return validationError("Invalid theme id");
   }

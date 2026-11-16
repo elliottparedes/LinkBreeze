@@ -144,25 +144,14 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
+    const isProd = process.env.NODE_ENV === "production";
     return [
       {
-        // Immutable long-term cache for Next.js static assets (hashed
-        // JS/CSS chunks). These are content-addressed — the filename
-        // changes on every build, so a 1-year TTL is safe.
-        // MUST be above the /:slug* rule — otherwise _next/static/ files
-        // match the catch-all and get the short s-maxage=60 instead.
-        source: "/_next/static/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
         // Revalidate public link pages on a short interval (ISR hint).
-        // Skips /_next, /api, and admin routes (handled below).
-        source: "/:slug*",
+        // Same shape as /:slug*, including nested paths, but the lookahead
+        // skips /_next. A Cache-Control on /_next/static makes the browser
+        // keep a dev chunk forever ("module factory is not available").
+        source: "/((?!_next/static|_next/image).*)",
         headers: [
           ...securityHeaders,
           buildCsp(),
@@ -223,6 +212,21 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       },
+      // Hashed production chunks are safe to cache for a year. Omitted in
+      // dev, and listed last so it wins over the public-page rule.
+      ...(isProd
+        ? [
+            {
+              source: "/_next/static/:path*",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=31536000, immutable",
+                },
+              ],
+            },
+          ]
+        : []),
     ];
   },
 

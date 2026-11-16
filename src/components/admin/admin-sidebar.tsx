@@ -70,12 +70,14 @@ export function AdminSidebar({
   pages,
   canManageAccounts,
   canManageInstance,
+  showPages,
   update,
 }: {
   username: string;
   pages: SidebarPage[];
   canManageAccounts: boolean;
   canManageInstance: boolean;
+  showPages: boolean;
   update: SidebarUpdateStatus;
 }) {
   const t = useTranslations("shell");
@@ -134,13 +136,13 @@ export function AdminSidebar({
         />
       </React.Suspense>
 
-      {!rail && (
+      {!rail && showPages && (
         <div className="mb-3 border-t border-border pt-3">
           <p className="mb-1.5 px-2.5 text-xs font-medium text-muted-foreground">
             {t("pagesSection")}
           </p>
           <React.Suspense fallback={null}>
-            <PageSwitcher pages={pages} />
+            <PageSwitcher pages={pages} canManageInstance={canManageInstance} />
           </React.Suspense>
         </div>
       )}

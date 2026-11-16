@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { AB_AUTO_PROMOTE_SETTING } from "@/lib/ab-test";
 import {
   getAllPages,
-  getDefaultPage,
   getAllThemes,
   getActiveTheme,
   getAnalyticsRetentionDays,
@@ -18,7 +17,9 @@ import { isUpdateCheckEnabled, getUpdateStatus } from "@/lib/update-check";
 import { maybeRunScheduledBackup, getBackupOverview } from "@/server/backup-scheduler";
 import { formatTimeOfDay } from "@/lib/backup-schedule";
 import { parseQrStyle } from "@/lib/qr-style";
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { pickVisiblePage } from "@/lib/ownership";
 import { getUserById } from "@/server/queries";
 import { getApiKeyRecord } from "@/server/api-keys";
 import { getApiUsage } from "@/lib/api-usage";
@@ -55,22 +56,21 @@ export default async function SettingsPage({
 }) {
   const { page: pageParam } = await searchParams;
   const session = await getSession();
-  const currentUser = session ? await getUserById(session.userId) : null;
+  if (!session) redirect("/login");
+  const currentUser = await getUserById(session.userId);
   async function getTotpEnabled(): Promise<boolean> {
     return Boolean(currentUser?.totpEnabled);
   }
 
-  const [allPages, defaultPage] = await Promise.all([
-    getAllPages(),
-    getDefaultPage(),
-  ]);
-  let activePage;
-  if (pageParam) {
-    activePage = allPages.find((p) => p.id === Number(pageParam));
-  }
-  if (!activePage) {
-    activePage = defaultPage ?? allPages[0];
-  }
+  const { caps } = await getCapabilitiesForUser(session.userId);
+  const canManageInstance = caps.manageInstance;
+  const allPages = await getAllPages();
+  const activePage = pickVisiblePage(
+    allPages,
+    caps,
+    session.userId,
+    pageParam ? Number(pageParam) : null,
+  );
 
   const [themes, active, updateCheckEnabled, retentionDays, consentText, subscribers, searchEngineHidden, abAutoPromote] = await Promise.all([
     getAllThemes(),
@@ -94,10 +94,7 @@ export default async function SettingsPage({
     getSetting("sessionIdleMinutes"),
     getSetting("sessionMaxHours"),
   ]);
-  const roleRows = await listRoles();
-  const canManageInstance = session
-    ? (await getCapabilitiesForUser(session.userId)).caps.manageInstance
-    : false;
+  const roleRows = canManageInstance ? await listRoles() : [];
 
   // API key card (Security tab): NEVER ship the hash to the client — only
   // display metadata (prefix, timestamps, rotation-grace window). Grace
@@ -167,6 +164,7 @@ export default async function SettingsPage({
       <SettingsTabs
         allowed={canManageInstance ? undefined : ["security"]}
         tabs={{
+          ...(canManageInstance ? {
           general: (
             <GeneralTab
               pageId={activePage?.id}
@@ -250,11 +248,14 @@ export default async function SettingsPage({
               />
             </div>
           ),
+          } : {}),
           security: (
             <div className="flex flex-col gap-4">
               <ChangePasswordForm />
               <TwoFactorCard enabled={await getTotpEnabled()} />
-              <ApiKeyCard record={apiKeyRecord} usage={getApiUsage()} />
+              {canManageInstance ? (
+                <ApiKeyCard record={apiKeyRecord} usage={getApiUsage()} />
+              ) : null}
               {canManageInstance && (
                 <SessionLimitsCard
                   globalIdleMinutes={sessionIdleRaw ?? ""}
@@ -280,6 +281,7 @@ export default async function SettingsPage({
               )}
             </div>
           ),
+          ...(canManageInstance ? {
           data: (
             <div className="flex flex-col gap-4">
               <UpdateStatusCard
@@ -311,6 +313,7 @@ export default async function SettingsPage({
               />
             </div>
           ),
+          } : {}),
         }}
       />
     </div>

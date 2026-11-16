@@ -1,12 +1,15 @@
+import { redirect } from "next/navigation";
 import {
   getAllThemes,
   getActiveTheme,
   getThemeById,
   seedThemesIfEmpty,
   getAllPages,
-  getDefaultPage,
   getAllCustomFonts,
+  getCapabilitiesForUser,
 } from "@/server/queries";
+import { getSession } from "@/lib/auth";
+import { pickVisiblePage } from "@/lib/ownership";
 import type { CustomFontMeta } from "@/lib/custom-fonts";
 import { ThemeManager } from "./theme-manager";
 
@@ -20,26 +23,32 @@ export default async function ThemePage({
   // Ensure presets exist, then load.
   await seedThemesIfEmpty();
 
+  const session = await getSession();
+  if (!session) redirect("/login");
+  const { caps } = await getCapabilitiesForUser(session.userId);
+
   const { page: pageParam } = await searchParams;
+  const allPages = await getAllPages();
+  const activePage = pickVisiblePage(
+    allPages,
+    caps,
+    session.userId,
+    pageParam ? Number(pageParam) : null,
+  );
 
-  // Resolve active page.
-  const [allPages, defaultPage] = await Promise.all([
-    getAllPages(),
-    getDefaultPage(),
-  ]);
-  let activePage;
-  if (pageParam) {
-    activePage = allPages.find((p) => p.id === Number(pageParam));
-  }
-  if (!activePage) {
-    activePage = defaultPage ?? allPages[0];
-  }
-
-  const [themes, active, fontRows] = await Promise.all([
+  const [allThemes, active, fontRows] = await Promise.all([
     getAllThemes(),
     getActiveTheme(),
     getAllCustomFonts(),
   ]);
+  const themes = caps.manageInstance
+    ? allThemes
+    : allThemes.filter((theme) => {
+        if (theme.isPreset) return true;
+        if (theme.isActive) return false;
+        const users = allPages.filter((page) => page.themeId === theme.id);
+        return users.length > 0 && users.every((page) => page.userId === session.userId);
+      });
 
   // Uploaded fonts (#82) — serialisable metadata for the client customizer.
   const customFonts: CustomFontMeta[] = fontRows.map((f) => ({
@@ -59,6 +68,16 @@ export default async function ThemePage({
     ? await getThemeById(activePage.themeId)
     : null;
   const effective = pageTheme ?? active;
+  const ownsTheme =
+    caps.manageInstance ||
+    Boolean(
+      pageTheme &&
+        !pageTheme.isPreset &&
+        !pageTheme.isActive &&
+        allPages
+          .filter((page) => page.themeId === pageTheme.id)
+          .every((page) => page.userId === session.userId),
+    );
 
   return (
     <div className="flex flex-col gap-8">
@@ -68,6 +87,7 @@ export default async function ThemePage({
         active={effective}
         pageId={activePage?.id}
         pageThemeId={activePage?.themeId ?? null}
+        ownsTheme={ownsTheme}
         customFonts={customFonts}
         pageBgAdjustment={{
           fit: activePage?.backgroundFitOverride ?? null,

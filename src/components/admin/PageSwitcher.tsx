@@ -15,7 +15,11 @@ interface PageSwitcherProps {
   variant?: "full" | "compact";
 }
 
-export function PageSwitcher({ pages, variant = "full" }: PageSwitcherProps) {
+export function PageSwitcher({
+  pages,
+  variant = "full",
+  canManageInstance = false,
+}: PageSwitcherProps & { canManageInstance?: boolean }) {
   const t = useTranslations("pageSwitcher");
   const router = useRouter();
   const pathname = usePathname();
@@ -138,19 +142,21 @@ export function PageSwitcher({ pages, variant = "full" }: PageSwitcherProps) {
               </button>
               {!page.isDefault && (
                 <>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDefault(page);
-                    }}
-                    disabled={settingDefaultId}
-                    className="mr-1 shrink-0 text-muted-foreground transition-colors hover:text-warning disabled:opacity-50"
-                    aria-label={t("makeDefault", { name: page.title || page.slug })}
-                    title={t("makeDefault", { name: page.title || page.slug })}
-                  >
-                    <Star className="size-3.5" />
-                  </button>
+                  {canManageInstance ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDefault(page);
+                      }}
+                      disabled={settingDefaultId}
+                      className="mr-1 shrink-0 text-muted-foreground transition-colors hover:text-warning disabled:opacity-50"
+                      aria-label={t("makeDefault", { name: page.title || page.slug })}
+                      title={t("makeDefault", { name: page.title || page.slug })}
+                    >
+                      <Star className="size-3.5" />
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={(e) => {

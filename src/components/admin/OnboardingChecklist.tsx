@@ -9,6 +9,8 @@ interface OnboardingChecklistProps {
   hasLinks: boolean;
   hasDisplayName: boolean;
   hasTheme: boolean;
+  /** Theme is an instance setting. Members do not get this step. */
+  showTheme?: boolean;
 }
 
 interface ChecklistItem {
@@ -23,6 +25,7 @@ export function OnboardingChecklist({
   hasLinks,
   hasDisplayName,
   hasTheme,
+  showTheme = true,
 }: OnboardingChecklistProps) {
   const t = useTranslations("onboarding");
   // Hydration-safe localStorage read: useSyncExternalStore renders the
@@ -65,13 +68,17 @@ export function OnboardingChecklist({
       icon: User,
       done: hasDisplayName,
     },
-    {
-      id: "theme",
-      label: t("setTheme"),
-      href: "/theme",
-      icon: Palette,
-      done: hasTheme,
-    },
+    ...(showTheme
+      ? [
+          {
+            id: "theme",
+            label: t("setTheme"),
+            href: "/theme",
+            icon: Palette,
+            done: hasTheme,
+          },
+        ]
+      : []),
     {
       id: "links",
       label: t("setLinks"),

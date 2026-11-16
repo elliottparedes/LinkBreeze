@@ -15,6 +15,7 @@ import {
   logError,
 } from "@/lib/errors";
 import { canEditPage } from "@/lib/ownership";
+import { claimThemeForMember } from "@/server/actions/theme";
 import { getCapabilitiesForUser, countPagesByOwner } from "@/server/queries";
 import {
   createPage as createPageQuery,
@@ -344,6 +345,15 @@ export async function updatePageAction(formData: FormData): Promise<ActionResult
   const access = await assertPageAccess(pageId);
   if (access.error) return access.error;
 
+  // The default flag chooses the instance homepage. A member who can edit
+  // their own page must not be able to take that over.
+  if (formData.has("isDefault") || formData.has("consentText")) {
+    const { caps } = await getCapabilitiesForUser(session.userId);
+    if (!caps.manageInstance) {
+      return forbiddenError("Only instance admins can change instance settings");
+    }
+  }
+
   // Check slug uniqueness if slug is being changed.
   if (updateData.slug) {
     const all = await getAllPages();
@@ -381,13 +391,19 @@ export async function updatePageAction(formData: FormData): Promise<ActionResult
 export async function setPageThemeAction(pageId: number, themeId: number): Promise<ActionResult> {
   const blocked = demoGuard();
   if (blocked) return blocked;
-  if (!(await getSession())) return unauthorizedError();
+  const session = await getSession();
+  if (!session) return unauthorizedError();
 
   // #124: page ownership gate.
   const access = await assertPageAccess(pageId);
   if (access.error) return access.error;
 
-  await updatePageQuery(pageId, { themeId });
+  const { caps } = await getCapabilitiesForUser(session.userId);
+  const assignId = caps.manageInstance
+    ? themeId
+    : await claimThemeForMember(themeId, session.userId, session.username);
+
+  await updatePageQuery(pageId, { themeId: assignId });
 
   revalidatePath("/theme");
   revalidatePath(`/`);
