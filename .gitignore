@@ -17,9 +17,10 @@
 /.next/
 /out/
 
-# AI agent files auto-written by next dev (not part of the project)
+# Local agent notes (not part of the project)
 /AGENTS.md
 /CLAUDE.md
+/.cursor/
 
 # production
 /build
