@@ -52,10 +52,9 @@ import {
   getLinkRates,
   getRecentActivity,
   getSocialTaps,
-  getTrafficSources,
   getViewHeatmap,
 } from "@/server/insights";
-import { SourceLinks } from "./source-links";
+import { getPlatformLabel, isSocialPlatform } from "@/lib/social-icons";
 import { VisitHeatmap } from "./visit-heatmap";
 import { RecentActivity } from "./recent-activity";
 
@@ -354,7 +353,7 @@ export default async function DashboardPage({
   );
   const pageId = activePage?.id;
 
-  const [stats, prevStats, links, breakdown, updateResult, activeTheme, retentionDays, sources, linkRates, heatmap, activity, socialTaps] = await Promise.all([
+  const [stats, prevStats, links, breakdown, updateResult, activeTheme, retentionDays, linkRates, heatmap, activity, socialTaps] = await Promise.all([
     getDashboardStats(range, pageId),
     getPreviousStats(range, pageId),
     getAllLinks(pageId),
@@ -362,7 +361,6 @@ export default async function DashboardPage({
     checkForUpdates(),
     getActiveTheme(),
     getAnalyticsRetentionDays(),
-    getTrafficSources(range, pageId),
     getLinkRates(range, pageId),
     getViewHeatmap(range, pageId),
     getRecentActivity(range, pageId),
@@ -538,15 +536,23 @@ export default async function DashboardPage({
         <Card className="h-full">
           <CardContent className="flex h-full flex-col gap-3">
             <div>
-              <span className="font-heading text-sm font-medium">{t("sourcesTitle")}</span>
-              <p className="text-xs text-muted-foreground">{t("sourcesDesc")}</p>
+              <span className="font-heading text-sm font-medium">{t("socialTapsTitle")}</span>
+              <p className="text-xs text-muted-foreground">{t("socialTapsDesc")}</p>
             </div>
-            <SourceLinks
-              slug={activePage?.slug ?? "u"}
-              baseUrl={(process.env.BASE_URL || "").replace(/\/$/, "")}
-              counts={sources.counts}
-              untagged={sources.untagged}
-            />
+            {socialTaps.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("socialTapsEmpty")}</p>
+            ) : (
+              <ul className="flex flex-col gap-1.5">
+                {socialTaps.map((tap) => (
+                  <li key={tap.platform} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate">
+                      {isSocialPlatform(tap.platform) ? getPlatformLabel(tap.platform) : tap.platform}
+                    </span>
+                    <span className="tabular-nums text-muted-foreground">{formatNumber(tap.count, locale)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
         <Card className="h-full">
@@ -564,7 +570,7 @@ export default async function DashboardPage({
               <span className="font-heading text-sm font-medium">{t("activityTitle")}</span>
               <p className="text-xs text-muted-foreground">{t("activityDesc")}</p>
             </div>
-            <RecentActivity rows={activity} socialTaps={socialTaps} locale={locale} />
+            <RecentActivity rows={activity} locale={locale} />
           </CardContent>
         </Card>
       </div>

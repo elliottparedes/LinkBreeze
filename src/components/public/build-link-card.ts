@@ -57,11 +57,9 @@ const ICON_SLOT_STYLE =
   "width:20px;height:20px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center";
 
 /**
- * Build the icon element shown before the title.
+ * Build the icon element shown on the title row.
  * Priority (#91): uploaded icon → picked lucide icon → cached favicon →
  * first-letter avatar. Uploaded/lucide choices override auto behavior.
- * Only shown for cards WITHOUT a thumbnail (thumbnail cards use the
- * full-bleed image at the top instead).
  */
 function buildIcon(link: LinkRow): string {
   // Operator-chosen lucide icon — inherits theme text color via currentColor.
@@ -184,10 +182,12 @@ function buildContentRow(link: LinkRow): string {
 
   return `<span style="display:flex;flex-direction:column;flex:1;min-width:0">
       ${featuredBadge}
-      <span style="display:flex;align-items:center;font-weight:${fontWeight};font-size:${fontSize};letter-spacing:var(--lb-letter-spacing)">${title}</span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span style="flex:1;min-width:0;overflow-wrap:anywhere;font-weight:${fontWeight};font-size:${fontSize};letter-spacing:var(--lb-letter-spacing)">${title}</span>
+        ${icon}
+      </span>
       ${description}
     </span>
-    ${icon}
     <span aria-hidden="true" style="margin-left:10px;opacity:.6;font-size:18px;color:var(--lb-accent)">${isPopupType(link.type) ? "&#8250;" : "&#8599;"}</span>`;
 }
 
