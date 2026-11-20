@@ -15,7 +15,6 @@ import {
   logError,
 } from "@/lib/errors";
 import { canEditPage } from "@/lib/ownership";
-import { claimThemeForMember } from "@/server/actions/theme";
 import { getCapabilitiesForUser, countPagesByOwner } from "@/server/queries";
 import {
   createPage as createPageQuery,
@@ -385,28 +384,6 @@ export async function updatePageAction(formData: FormData): Promise<ActionResult
   if (finalSlug) {
     revalidatePath(`/${finalSlug}`, "layout");
   }
-  return { success: true };
-}
-
-export async function setPageThemeAction(pageId: number, themeId: number): Promise<ActionResult> {
-  const blocked = demoGuard();
-  if (blocked) return blocked;
-  const session = await getSession();
-  if (!session) return unauthorizedError();
-
-  // #124: page ownership gate.
-  const access = await assertPageAccess(pageId);
-  if (access.error) return access.error;
-
-  const { caps } = await getCapabilitiesForUser(session.userId);
-  const assignId = caps.manageInstance
-    ? themeId
-    : await claimThemeForMember(themeId, session.userId, session.username);
-
-  await updatePageQuery(pageId, { themeId: assignId });
-
-  revalidatePath("/theme");
-  revalidatePath(`/`);
   return { success: true };
 }
 

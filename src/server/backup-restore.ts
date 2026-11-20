@@ -8,7 +8,9 @@ import {
   settings,
   themes,
   customFonts,
+  users,
 } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import {
   type ActionResult,
@@ -146,6 +148,13 @@ const themeRowSchema = z.object({
   // Meta
   isActive: z.boolean().optional(),
   isPreset: z.boolean().optional(),
+  ownerId: z.number().int().positive().nullable().optional(),
+});
+
+const themeOwnerSchema = z.object({
+  id: z.number().int().positive(),
+  username: z.string(),
+  createdAt: z.string(),
 });
 
 /** Uploaded theme font row (#82) — rows only in backups. */
@@ -168,6 +177,7 @@ export interface BackupPayload {
   sections?: Array<{ id?: number; pageId: number; title: string; icon: string | null; orderIndex: number; createdAt?: string }>;
   settings: Array<{ key: string; value: string }>;
   themes: ThemeRow[];
+  themeOwners?: z.infer<typeof themeOwnerSchema>[];
   /** Uploaded theme fonts (#82) — rows only; files live in the uploads
    *  volume, which survives a restore (same as avatars/backgrounds). */
   customFonts?: Array<{
@@ -184,13 +194,15 @@ export interface BackupPayload {
 
 /** Snapshot of all regenerable config (not analytics — that's CSV-exportable). */
 export async function getBackupPayload(): Promise<BackupPayload> {
-  const [p, l, sec, s, t, cf] = await Promise.all([
+  const [p, l, sec, s, t, cf, themeOwners] = await Promise.all([
     db.select().from(profile),
     db.select().from(links),
     db.select().from(linkSections),
     db.select().from(settings),
     db.select().from(themes),
     db.select().from(customFonts),
+    db.selectDistinct({ id: users.id, username: users.username, createdAt: users.createdAt })
+      .from(users).innerJoin(themes, eq(themes.ownerId, users.id)),
   ]);
   return {
     version: SUPPORTED_BACKUP_VERSION,
@@ -200,6 +212,7 @@ export async function getBackupPayload(): Promise<BackupPayload> {
     sections: sec,
     settings: s,
     themes: t,
+    themeOwners,
     customFonts: cf,
   };
 }
@@ -233,7 +246,8 @@ export async function applyBackupPayload(
   const validatedLinks = z.array(linkRowSchema).safeParse(parsed.links);
   const validatedSettings = z.array(settingRowSchema).safeParse(parsed.settings);
   const validatedThemes = z.array(themeRowSchema).safeParse(parsed.themes);
-  if (!validatedProfile.success || !validatedLinks.success || !validatedSettings.success || !validatedThemes.success) {
+  const validatedOwners = z.array(themeOwnerSchema).optional().safeParse(parsed.themeOwners);
+  if (!validatedProfile.success || !validatedLinks.success || !validatedSettings.success || !validatedThemes.success || !validatedOwners.success) {
     return validationError("Backup contains malformed data — rows do not match the expected schema");
   }
   parsed.profile = validatedProfile.data as ProfileRow[];
@@ -346,7 +360,21 @@ export async function applyBackupPayload(
       if (sections.length) tx.insert(linkSections).values(sections).run();
       if (parsed.links.length) tx.insert(links).values(parsed.links).run();
       if (parsed.settings.length) tx.insert(settings).values(parsed.settings).run();
-      if (parsed.themes.length) tx.insert(themes).values(parsed.themes).run();
+      if (parsed.themes.length) {
+        // Backups omit accounts. Restore ownership only when the same account
+        // still exists here, since user ids can refer to different accounts on another instance.
+        const backedUpOwners = new Map(validatedOwners.data?.map((owner) => [owner.id, owner]));
+        const matchingOwners = new Set(tx.select({
+          id: users.id, username: users.username, createdAt: users.createdAt,
+        }).from(users).all().filter((user) => {
+          const owner = backedUpOwners.get(user.id);
+          return owner?.username === user.username && owner.createdAt === user.createdAt;
+        }).map((user) => user.id));
+        tx.insert(themes).values(parsed.themes.map((theme) => ({
+          ...theme,
+          ownerId: theme.ownerId && matchingOwners.has(theme.ownerId) ? theme.ownerId : null,
+        }))).run();
+      }
       if (fonts.length) tx.insert(customFonts).values(fonts).run();
     });
   } catch (err) {

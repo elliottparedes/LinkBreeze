@@ -9,8 +9,9 @@ import { useTranslations } from "next-intl";
 interface PresetGalleryProps {
   themes: ThemeRow[];
   activeId: number | null;
-  selecting: number | null;
-  delPending: number | null;
+  selectedId: number | null;
+  draftIds: Set<number>;
+  pending: boolean;
   onSelect: (id: number) => void;
   onDeleteClick: (id: number) => void;
 }
@@ -83,64 +84,57 @@ function ThemePreview({ theme }: { theme: ThemeRow }) {
 export function PresetGallery({
   themes,
   activeId,
-  selecting,
-  delPending,
+  selectedId,
+  draftIds,
+  pending,
   onSelect,
   onDeleteClick,
 }: PresetGalleryProps) {
   const t = useTranslations("theme");
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid auto-cols-[10.5rem] grid-flow-col gap-3 overflow-x-auto px-1 py-1 sm:auto-cols-[12rem]">
       {themes.map((theme) => {
         const isActive = theme.id === activeId;
+        const isSelected = theme.id === selectedId;
+        const hasDraft = draftIds.has(theme.id);
         return (
           <div
             key={theme.id}
-            className="group relative overflow-hidden rounded-xl border border-border text-left transition-[border-color,box-shadow] hover:ring-2 hover:ring-ring/50 data-[active=true]:ring-2 data-[active=true]:ring-primary"
-            data-active={isActive}
+            className="group relative overflow-hidden rounded-xl border border-border text-start transition-[border-color,box-shadow] hover:ring-2 hover:ring-ring/50 data-[selected=true]:ring-2 data-[selected=true]:ring-primary"
+            data-selected={isSelected}
           >
             <button
               onClick={() => onSelect(theme.id)}
-              className="block w-full"
+              className="block h-full w-full text-start focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
               type="button"
-              disabled={selecting === theme.id}
+              aria-pressed={isSelected}
+              disabled={pending}
             >
               <ThemePreview theme={theme} />
               <div className="bg-card p-2.5">
                 <div className="truncate text-sm font-medium text-foreground">{theme.name}</div>
-                <div className="mt-0.5 flex items-center justify-between gap-2">
-                  <span className="truncate text-xs capitalize text-muted-foreground">
-                    {theme.linkStyle} · {theme.fontFamily}
-                  </span>
+                <div className="mt-1 flex min-h-5 flex-wrap items-center gap-1">
                   {isActive ? (
                     <Badge className="shrink-0 border-transparent bg-[var(--aurora-grad)] text-white">
-                      <Check className="size-3" /> Active
+                      <Check className="size-3" /> {t("liveTheme")}
                     </Badge>
-                  ) : selecting === theme.id ? (
-                    <span className="shrink-0 text-xs text-muted-foreground">{t("applying")}</span>
-                  ) : (
-                    <span className="shrink-0 text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
-                      Use
-                    </span>
-                  )}
+                  ) : null}
+                  {isSelected && !isActive ? <Badge variant="secondary">{t("previewingTheme")}</Badge> : null}
+                  {hasDraft ? <Badge variant="outline">{t("themeDraft")}</Badge> : null}
                 </div>
               </div>
             </button>
             {/* Delete button for non-preset, non-active custom themes */}
-            {!theme.isPreset && !isActive ? (
+            {!theme.isPreset && !isActive && !theme.isActive ? (
               <button
+                type="button"
                 onClick={() => onDeleteClick(theme.id)}
-                disabled={delPending === theme.id}
-                className="absolute right-1.5 top-1.5 rounded-md bg-black/40 p-1.5 text-white opacity-0 transition-opacity hover:bg-destructive group-hover:opacity-100"
-                title={t("deleteTheme")}
+                disabled={pending}
+                className="absolute end-1.5 top-1.5 rounded-md bg-black/60 p-1.5 text-white hover:bg-destructive"
+                aria-label={t("deleteNamedTheme", { name: theme.name })}
               >
                 <Trash2 className="size-3.5" />
               </button>
-            ) : null}
-            {!theme.isPreset ? (
-              <span className="absolute left-1.5 top-1.5 rounded bg-black/40 px-1.5 py-0.5 text-xs font-medium text-white">
-                Custom
-              </span>
             ) : null}
           </div>
         );

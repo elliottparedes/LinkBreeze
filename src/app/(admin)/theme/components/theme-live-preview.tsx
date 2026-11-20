@@ -14,7 +14,7 @@ import {
 import { buildLinkCardHtml } from "@/components/public/build-link-card";
 import { buildDividerHtml } from "@/components/public/build-divider";
 import type { LinkRow } from "@/server/queries";
-import type { CustomizerState } from "./theme-customizer";
+import type { BackgroundAdjustment, CustomizerState } from "./theme-customizer";
 import { parseCustomFontId, buildFontFaceCss, type CustomFontMeta } from "@/lib/custom-fonts";
 
 /** Fake rows so the preview renders realistic link cards. */
@@ -64,13 +64,22 @@ const NOISE_URL =
 export function ThemeLivePreview({
   state,
   customFonts = [],
+  bgAdjustment,
 }: {
   state: CustomizerState;
   /** Uploaded fonts (#82) so the preview renders the selected custom font. */
   customFonts?: CustomFontMeta[];
+  bgAdjustment?: BackgroundAdjustment | null;
 }) {
   const tDemo = useTranslations("theme");
-  const theme = React.useMemo<ThemeInput>(() => ({ ...state }), [state]);
+  const theme = React.useMemo<ThemeInput & { backgroundZoom?: number | null }>(() => ({
+    ...state,
+    backgroundFit: bgAdjustment?.fit ?? state.backgroundFit,
+    backgroundPosition: bgAdjustment?.posX != null && bgAdjustment.posY != null
+      ? `${bgAdjustment.posX * 100}% ${bgAdjustment.posY * 100}%`
+      : state.backgroundPosition,
+    backgroundZoom: bgAdjustment?.zoom,
+  }), [state, bgAdjustment]);
 
   // Uploaded-font lookup for the resolver + the matching @font-face rule.
   // Covers both the site font and the card font refs.

@@ -1,7 +1,7 @@
 /**
  * Italiano — locale admin UI.
  *
- * lastSyncedHash: 7d5295af3a48 ← rigenerato da `npm run i18n:check -- --update`
+ * lastSyncedHash: 126c21776e2b ← rigenerato da `npm run i18n:check -- --update`
  * (mismatch = source inglese modificato, risincronizzare questo file)
  */
 import type { Messages } from "./en";
@@ -156,9 +156,9 @@ const it: Messages = {
     subscribersTitle: "Iscritti email — apre Impostazioni → Dati",
     exportCsv: "Esporta CSV",
     viewsLabel: "Visualizzazioni",
-    clicksLabel: "Clic",
+    clicksLabel: "Clic sui link",
     uniqueVisitors: "{count} visitatori unici",
-    linkClicksInRange: "Clic sui link nell'intervallo",
+    linkClicksInRange: "Clic sulle schede dei link",
     ctrLabel: "Tasso di clic",
     ctrHint: "Clic / visualizzazioni",
     activeLinks: "Link attivi",
@@ -185,7 +185,7 @@ const it: Messages = {
     activitySocial: "Tap su {platform}",
     activityEmpty: "Nessuna attività in questo periodo.",
     socialTapsTitle: "Clic sui profili social",
-    socialTapsDesc: "Clic sulle icone dei social nella tua pagina",
+    socialTapsDesc: "Clic sulle icone aggiunte in Profilo → Link social.",
     socialTapsEmpty: "Nessun clic sui profili social in questo periodo.",
   },
 
@@ -386,6 +386,9 @@ const it: Messages = {
     thisInformationAppearsOnYourPublicPage: "Queste informazioni compaiono sulla tua pagina pubblica.",
 
     addAPlatform: "Aggiungi una piattaforma",
+    searchPlatforms: "Cerca piattaforme",
+    noMatchingPlatforms: "Nessuna piattaforma corrisponde alla ricerca.",
+    socialPlatformUrl: "URL di {platform}",
 
     uploading: "Caricamento…",
 
@@ -451,6 +454,28 @@ const it: Messages = {
   },
 
   theme: {
+    editPreset: "Modifica tema preimpostato",
+    editPresetCopyNote: "Dai un nome a una copia di {name} per modificarla in I miei temi.",
+    createTheme: "Crea tema",
+    browseThemes: "Scegli un tema per visualizzarne l’anteprima su questa pagina.",
+    instanceThemeScope: "Modifica il tema predefinito delle pagine che lo ereditano.",
+    presetThemes: "Temi preimpostati",
+    savedThemes: "Altri temi salvati",
+    myThemes: "I miei temi",
+    noSavedThemes: "I temi salvati appariranno qui.",
+    liveTheme: "Pubblicato",
+    previewingTheme: "Anteprima",
+    themeDraft: "Bozza",
+    draftInThisTab: "Le modifiche alla bozza vengono conservate in questa scheda.",
+    thisThemeIsLive: "Questo tema è pubblicato.",
+    previewThemeNote: "Applica questo tema quando vuoi.",
+    backToLiveTheme: "Torna al tema pubblicato",
+    discardThemeEdits: "Scarta modifiche",
+    applyTheme: "Applica tema",
+    saveAndApplyTheme: "Salva e applica",
+    saveThemeCopyNote: "Salva le modifiche a {name} come nuovo tema e applicalo.",
+    themeCopyName: "{name} (copia)",
+    deleteThemeNote: "Il tema verrà eliminato definitivamente. Le pagine che lo usano passeranno al tema predefinito.",
     customiseTitle: "Personalizza {name}",
     editingCustom: "Modifica di un tema personalizzato",
     presetCopyNote: "Preset — al salvataggio viene creata la tua copia",

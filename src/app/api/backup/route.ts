@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { exportBackupPayload } from "@/server/actions/data";
+import { requireInstanceAdmin } from "@/server/access";
+import { getBackupPayload } from "@/server/backup-restore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Download the full config backup as JSON. Auth-required. */
+/** Download the full config backup as JSON. Instance admins only. */
 export async function GET() {
-  if (!(await getSession())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await requireInstanceAdmin();
+  if (denied) {
+    return NextResponse.json({ error: denied.error }, { status: denied.errorCode === "unauthorized" ? 401 : 403 });
   }
-  const payload = await exportBackupPayload();
+  const payload = await getBackupPayload();
   const today = payload.exportedAt.slice(0, 10);
   return NextResponse.json(payload, {
     headers: {

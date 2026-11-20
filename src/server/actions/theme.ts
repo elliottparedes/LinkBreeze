@@ -1,316 +1,217 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { demoGuard } from "@/lib/demo-guard";
-import { customSchema } from "@/lib/theme-schema";
-import {
-  setActiveTheme,
-  updateTheme,
-  getActiveTheme,
-  getThemeById,
-  getPagesUsingTheme,
-  duplicateTheme,
-  deleteTheme,
-  getCapabilitiesForUser,
-} from "@/server/queries";
-import {
-  type ActionResult,
-  validationError,
-  notFoundError,
-  conflictError,
-  forbiddenError,
-  unauthorizedError,
-  logError,
-} from "@/lib/errors";
-import { requireInstanceAdmin } from "@/server/access";
+import { and, eq, isNull, ne, or } from "drizzle-orm";
+import { z } from "zod";
+import { db } from "@/db";
+import { customFonts, pages, themes } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { parseCustomFontId } from "@/lib/custom-fonts";
+import { demoGuard } from "@/lib/demo-guard";
+import {
+  type ActionError,
+  type ActionResult,
+  conflictError,
+  forbiddenError,
+  logError,
+  notFoundError,
+  unauthorizedError,
+  validationError,
+  withAction,
+} from "@/lib/errors";
+import { canEditPage } from "@/lib/ownership";
+import { canEditThemeInPlace, sameBackgroundMedia } from "@/lib/theme-editing";
+import {
+  backgroundAdjustmentSchema,
+  customSchema,
+  sanitizeThemeFields,
+} from "@/lib/theme-schema";
+import {
+  getCapabilitiesForUser,
+  insertThemeCopy,
+  markActiveTheme,
+  removeTheme,
+  themeNameExists,
+} from "@/server/queries";
 
-type ThemeActor =
-  | { admin: true; userId: number; username: string }
-  | { admin: false; userId: number; username: string };
+const applySchema = z.object({
+  themeId: z.number().int().positive(),
+  pageId: z.number().int().positive().optional(),
+  fields: customSchema.optional(),
+  background: backgroundAdjustmentSchema.nullable().optional(),
+  copyName: z.string().trim().min(1).max(100).optional(),
+});
 
-async function themeActor(): Promise<ThemeActor | null> {
+type ApplyResult = ActionResult<{ themeId: number }> | (ActionError & { needsCopyName: true });
+
+async function getThemeActor() {
   const session = await getSession();
   if (!session) return null;
   const { caps } = await getCapabilitiesForUser(session.userId);
-  return {
-    admin: caps.manageInstance,
-    userId: session.userId,
-    username: session.username,
-  };
+  return { userId: session.userId, caps };
 }
 
-/** A member may edit a theme only when it is their private copy: not a
- *  preset, not the instance default, and every page using it is theirs. */
-async function memberOwnsTheme(userId: number, themeId: number): Promise<boolean> {
-  const theme = await getThemeById(themeId);
-  if (!theme || theme.isPreset || theme.isActive) return false;
-  const using = await getPagesUsingTheme(themeId);
-  if (using.length === 0) return true;
-  return using.every((page) => page.userId === userId);
-}
-
-async function uniqueThemeName(base: string): Promise<string> {
-  const { themeNameExists } = await import("@/server/queries");
-  const root = base.trim().slice(0, 80) || "Theme";
-  for (let i = 1; i < 50; i++) {
-    const name = (i === 1 ? root : `${root} ${i}`).slice(0, 100);
-    if (!(await themeNameExists(name))) return name;
-  }
-  return `${root} ${Date.now()}`.slice(0, 100);
-}
-
-/**
- * Theme id to store on a member's page. Shared presets and the instance
- * default are copied first so a later edit cannot change anyone else's page.
- */
-export async function claimThemeForMember(
-  themeId: number,
-  userId: number,
-  username: string,
-): Promise<number> {
-  const theme = await getThemeById(themeId);
-  if (!theme) return themeId;
-  if (await memberOwnsTheme(userId, themeId)) return themeId;
-  const created = await duplicateTheme(theme.id, await uniqueThemeName(`${theme.name} · ${username}`));
-  return created.id;
-}
-
-/** Revalidate the public paths of every page rendering this theme. */
-async function revalidateThemePages(themeId: number): Promise<void> {
+function revalidateThemes(publicPath?: string) {
   try {
-    const using = await getPagesUsingTheme(themeId);
-    for (const page of using) {
-      revalidatePath(`/${page.slug}`);
-    }
-  } catch (err) {
-    // Revalidation is best-effort: a failure here must not fail the save.
-    logError("revalidateThemePages", err, { themeId });
-  }
-}
-
-export async function activateTheme(id: number): Promise<ActionResult> {
-  const blocked = demoGuard();
-  if (blocked) return blocked;
-  // #124: capability gate — the role ROW decides, not the session hint.
-  const denied = await requireInstanceAdmin();
-  if (denied) return denied;
-  if (typeof id !== "number" || Number.isNaN(id)) {
-    return validationError("Invalid theme id");
-  }
-  try {
-    await setActiveTheme(id);
     revalidatePath("/theme");
-    revalidatePath("/");
-    await revalidateThemePages(id);
-    return { success: true };
-  } catch (err) {
-    logError("activateTheme", err, { id });
-    return {
-      success: false,
-      error: "Something went wrong. Please try again.",
-      errorCode: "internal",
-    };
+    if (publicPath) revalidatePath(publicPath, "layout");
+  } catch (error) {
+    // The transaction already committed. Cache refresh is best-effort.
+    logError("revalidateThemes", error, { publicPath });
   }
 }
 
-export async function customizeActiveTheme(formData: FormData): Promise<ActionResult> {
+const runApplyTheme = withAction("applyTheme", async (input: z.input<typeof applySchema>): Promise<ApplyResult> => {
   const blocked = demoGuard();
   if (blocked) return blocked;
-  const actor = await themeActor();
+  const actor = await getThemeActor();
   if (!actor) return unauthorizedError();
 
-  // Theme to edit: explicit id (page-specific theme or customizer target),
-  // falling back to the globally active theme. Editing the global theme when
-  // the caller meant a page's own theme was Bug 1 — the public page renders
-  // page.themeId first, so the edit silently had no visible effect.
-  const themeIdRaw = formData.get("themeId");
-  const themeId = themeIdRaw ? Number(themeIdRaw) : null;
-  const target = themeId && Number.isFinite(themeId)
-    ? await getThemeById(themeId)
-    : await getActiveTheme();
-  if (!target) return notFoundError("No theme to customise");
-  if (!actor.admin && !(await memberOwnsTheme(actor.userId, target.id))) {
-    return forbiddenError("This theme is shared. Save a copy to customise your own page.");
-  }
+  const parsed = applySchema.safeParse(input);
+  if (!parsed.success) return validationError(parsed.error.issues[0]?.message ?? "Invalid input");
+  const { themeId, pageId, fields = {}, background, copyName } = parsed.data;
+  if (pageId === undefined && !actor.caps.manageInstance) return forbiddenError();
+  if (pageId === undefined && background !== undefined) return validationError("Invalid page id");
+  if (sanitizeThemeFields(fields).dropped.length) return validationError("Invalid input");
+  const editsTheme = Object.keys(fields).length > 0;
 
-  const parsed = customSchema.safeParse({
-    backgroundType: formData.get("backgroundType") || undefined,
-    backgroundValue: formData.get("backgroundValue") || undefined,
-    backgroundAngle: formData.get("backgroundAngle") || undefined,
-    backgroundImageUrl: formData.get("backgroundImageUrl") || undefined,
-    backgroundFit: formData.get("backgroundFit") || undefined,
-    backgroundPosition: formData.get("backgroundPosition") || undefined,
-    overlayColor: formData.get("overlayColor") || undefined,
-    overlayOpacity: formData.get("overlayOpacity") || undefined,
-    primaryColor: formData.get("primaryColor") || undefined,
-    secondaryColor: formData.get("secondaryColor") || undefined,
-    cardBackground: formData.get("cardBackground") || undefined,
-    cardBorderColor: formData.get("cardBorderColor") || undefined,
-    textColor: formData.get("textColor") || undefined,
-    mutedTextColor: formData.get("mutedTextColor") || undefined,
-    fontFamily: formData.get("fontFamily") || undefined,
-    cardFontFamily: formData.get("cardFontFamily") ?? undefined,
-    fontScale: formData.get("fontScale") || undefined,
-    fontWeight: formData.get("fontWeight") || undefined,
-    letterSpacing: formData.get("letterSpacing") || undefined,
-    linkStyle: formData.get("linkStyle") || undefined,
-    animationType: formData.get("animationType") || undefined,
-    radius: formData.get("radius") || undefined,
-    buttonSize: formData.get("buttonSize") || undefined,
-    borderWidth: formData.get("borderWidth") || undefined,
-    shadowStrength: formData.get("shadowStrength") || undefined,
-    hoverEffect: formData.get("hoverEffect") || undefined,
-    containerWidth: formData.get("containerWidth") || undefined,
-    alignment: formData.get("alignment") || undefined,
-    density: formData.get("density") || undefined,
-    glow: formData.get("glow") || undefined,
-    glowColor: formData.get("glowColor") || undefined,
-    blur: formData.get("blur") || undefined,
-    noise: formData.get("noise") || undefined,
-    avatarShape: formData.get("avatarShape") || undefined,
-    avatarBorder: formData.get("avatarBorder") || undefined,
-    avatarFloat: formData.get("avatarFloat") || undefined,
-    avatarSize: formData.get("avatarSize") || undefined,
-    dividerStyle: formData.get("dividerStyle") || undefined,
-    dividerColor: formData.has("dividerColor") ? formData.get("dividerColor") : undefined,
-    dividerThickness: formData.get("dividerThickness") || undefined,
-    dividerWidth: formData.get("dividerWidth") || undefined,
-    profileLayout: formData.get("profileLayout") || undefined,
-    textAnimation: formData.get("textAnimation") || undefined,
-  });
-  if (!parsed.success) {
-    return validationError(parsed.error.issues[0]?.message ?? "Invalid input");
-  }
+  // Access checks, shared-theme detection, and writes use the same short
+  // transaction. Revalidation and other asynchronous work stay outside it.
+  const result = db.transaction<ApplyResult & { slug?: string }>((tx) => {
+    const page = pageId === undefined ? undefined : tx.select().from(pages).where(eq(pages.id, pageId)).get();
+    if (pageId !== undefined && !page) return notFoundError("Page not found");
+    if (page && !canEditPage(actor.caps, actor, page)) return forbiddenError();
 
-  const active = target;
-  if (!active) return notFoundError("No active theme");
+    const theme = tx.select().from(themes).where(eq(themes.id, themeId)).get();
+    if (!theme || !(actor.caps.manageInstance || theme.isPreset || theme.isActive ||
+      theme.ownerId === actor.userId || page?.themeId === themeId)) {
+      return notFoundError("Theme not found");
+    }
 
-  const updates: Record<string, string> = {};
-  for (const [key, value] of Object.entries(parsed.data)) {
-    if (value !== undefined) updates[key] = value as string;
-  }
+    const editedTheme = { ...theme, ...fields };
+    const previousTheme = page && (
+      (page.themeId && tx.select().from(themes).where(eq(themes.id, page.themeId)).get()) ||
+      tx.select().from(themes).where(eq(themes.isActive, true)).get()
+    );
 
-  // Uploaded-font references must point at a real custom_fonts row, so a
-  // deleted font can't be re-selected from a stale client state. Applies
-  // to both the site font and the card font.
-  for (const key of ["fontFamily", "cardFontFamily"] as const) {
-    const val = updates[key];
-    if (val && parseCustomFontId(val)) {
-      const fontId = parseCustomFontId(val)!;
-      const { getCustomFontById } = await import("@/server/queries");
-      if (!(await getCustomFontById(fontId))) {
-        return validationError("That custom font no longer exists");
+    let appliedThemeId = themeId;
+    if (editsTheme) {
+      for (const ref of [fields.fontFamily, fields.cardFontFamily]) {
+        const id = parseCustomFontId(ref);
+        if (id && !tx.select({ id: customFonts.id }).from(customFonts).where(eq(customFonts.id, id)).get()) {
+          return validationError("That custom font no longer exists");
+        }
+      }
+
+      const ownerId = page?.userId ?? actor.userId;
+      const usedByOtherPage = Boolean(tx.select({ id: pages.id }).from(pages).where(and(
+        eq(pages.themeId, themeId),
+        pageId === undefined ? undefined : ne(pages.id, pageId),
+      )).get());
+      const canUpdate = canEditThemeInPlace(theme, {
+        ownerId,
+        pageId,
+        manageInstance: actor.caps.manageInstance,
+        usedByOtherPage,
+      });
+
+      if (copyName) {
+        if (themeNameExists(copyName, ownerId, tx)) {
+          return conflictError("A theme with this name already exists");
+        }
+        appliedThemeId = insertThemeCopy(tx, editedTheme, copyName, ownerId).id;
+      } else if (canUpdate) {
+        tx.update(themes).set({ ...fields, ownerId: theme.ownerId ?? ownerId }).where(eq(themes.id, themeId)).run();
+      } else {
+        return { ...conflictError("Name is required"), needsCopyName: true };
       }
     }
-  }
 
-  if (Object.keys(updates).length > 0) {
-    try {
-      await updateTheme(active.id, updates);
-    } catch (err) {
-      logError("customizeActiveTheme", err, { themeId: active.id });
-      return {
-        success: false,
-        error: "Something went wrong. Please try again.",
-        errorCode: "internal",
-      };
+    if (page) {
+      const adjustment = background !== undefined ? background
+        : previousTheme && sameBackgroundMedia(previousTheme, editedTheme) ? undefined : null;
+      const keepsInheritedTheme = !editsTheme && background !== undefined && page.themeId === null &&
+        previousTheme?.id === appliedThemeId;
+      tx.update(pages).set({
+        themeId: keepsInheritedTheme ? null : appliedThemeId,
+        ...(adjustment === undefined ? {} : {
+          backgroundFitOverride: adjustment?.fit ?? null,
+          backgroundPosX: adjustment?.posX ?? null,
+          backgroundPosY: adjustment?.posY ?? null,
+          backgroundZoom: adjustment?.zoom ?? null,
+        }),
+      }).where(eq(pages.id, page.id)).run();
+    } else if (!theme.isActive || appliedThemeId !== themeId) {
+      markActiveTheme(tx, appliedThemeId);
     }
-  }
 
-  revalidatePath("/theme");
-  revalidatePath("/");
-  // Revalidate every public page rendering this theme so edits appear
-  // immediately instead of waiting out the ISR window.
-  await revalidateThemePages(active.id);
-  return { success: true };
+    return { success: true, themeId: appliedThemeId, slug: page?.slug };
+  }, { behavior: "immediate" });
+
+  if (!result.success) return result;
+  revalidateThemes(result.slug ? `/${result.slug}` : "/");
+  return { success: true, themeId: result.themeId };
+});
+
+export async function applyTheme(input: z.input<typeof applySchema>): Promise<ApplyResult> {
+  return runApplyTheme(input);
 }
 
-export async function duplicateActiveTheme(
-  name: string,
-  themeId?: number,
-): Promise<ActionResult<{ themeId: number }>> {
+const runDuplicateTheme = withAction("duplicateActiveTheme", async (name: string, themeId: number): Promise<ActionResult<{ themeId: number }>> => {
   const blocked = demoGuard();
   if (blocked) return blocked;
-  const actor = await themeActor();
+  const actor = await getThemeActor();
   if (!actor) return unauthorizedError();
-
-  // Bug 2 fix: duplicate the theme shown in the customizer (page theme or
-  // explicit id), not always the globally active one.
-  const source = themeId && Number.isFinite(themeId)
-    ? await getThemeById(themeId)
-    : await getActiveTheme();
-  if (!source) return notFoundError("No theme to duplicate");
-  if (!actor.admin && !source.isPreset && !source.isActive && !(await memberOwnsTheme(actor.userId, source.id))) {
-    return forbiddenError("You can only copy a preset or your own theme.");
-  }
-
-  const trimmed = (name || "").trim().slice(0, 100);
+  if (!Number.isSafeInteger(themeId) || themeId <= 0) return validationError("Invalid theme id");
+  const trimmed = typeof name === "string" ? name.trim().slice(0, 100) : "";
   if (!trimmed) return validationError("Name is required");
 
-  const { themeNameExists } = await import("@/server/queries");
-  if (await themeNameExists(trimmed)) {
-    return conflictError("A theme with this name already exists");
-  }
+  const result = db.transaction<ActionResult<{ themeId: number }>>((tx) => {
+    const theme = tx.select().from(themes).where(eq(themes.id, themeId)).get();
+    if (!theme || !(actor.caps.manageInstance || theme.isPreset || theme.isActive || theme.ownerId === actor.userId)) {
+      return notFoundError("Theme not found");
+    }
+    if (themeNameExists(trimmed, actor.userId, tx)) {
+      return conflictError("A theme with this name already exists");
+    }
+    const copy = insertThemeCopy(tx, theme, trimmed, actor.userId);
+    return { success: true, themeId: copy.id };
+  }, { behavior: "immediate" });
+  if (result.success) revalidateThemes();
+  return result;
+});
 
-  try {
-    const created = await duplicateTheme(source.id, trimmed);
-    revalidatePath("/theme");
-    return { success: true, themeId: created.id };
-  } catch (err) {
-    logError("duplicateActiveTheme", err, { themeId: source.id, name: trimmed });
-    return {
-      success: false,
-      error: "Something went wrong. Please try again.",
-      errorCode: "internal",
-    };
-  }
+export async function duplicateActiveTheme(name: string, themeId: number): Promise<ActionResult<{ themeId: number }>> {
+  return runDuplicateTheme(name, themeId);
 }
 
-export async function deleteCustomTheme(id: number): Promise<ActionResult> {
+const runDeleteTheme = withAction("deleteCustomTheme", async (id: number): Promise<ActionResult> => {
   const blocked = demoGuard();
   if (blocked) return blocked;
-  const actor = await themeActor();
+  const actor = await getThemeActor();
   if (!actor) return unauthorizedError();
-  if (!actor.admin) {
-    const theme = await getThemeById(id);
-    const using = theme ? await getPagesUsingTheme(id) : [];
-    const exclusive =
-      Boolean(theme) &&
-      !theme!.isPreset &&
-      !theme!.isActive &&
-      using.length > 0 &&
-      using.every((page) => page.userId === actor.userId);
-    if (!exclusive) {
-      return forbiddenError("You can only delete a theme used by your own page.");
+  if (!Number.isSafeInteger(id) || id <= 0) return validationError("Invalid theme id");
+
+  const result = db.transaction<ActionResult>((tx) => {
+    const theme = tx.select().from(themes).where(eq(themes.id, id)).get();
+    if (!theme || !(actor.caps.manageInstance || theme.ownerId === actor.userId)) {
+      return notFoundError("Theme not found");
     }
-  }
-  if (typeof id !== "number" || Number.isNaN(id)) {
-    return validationError("Invalid theme id");
-  }
-
-  // Don't allow deleting presets or the active theme
-  const active = await getActiveTheme();
-  if (active?.id === id) {
-    return validationError("Cannot delete the active theme");
-  }
-  const row = await getThemeById(id);
-  if (!row) return validationError("Theme not found");
-  if (row.isPreset) {
-    return validationError("Built-in themes cannot be deleted");
-  }
-
-  try {
-    await deleteTheme(id);
-    revalidatePath("/theme");
+    if (theme.isActive) return validationError("Cannot delete the active theme");
+    if (theme.isPreset) return validationError("Built-in themes cannot be deleted");
+    if (!actor.caps.manageInstance && tx.select({ id: pages.id }).from(pages).where(and(
+      eq(pages.themeId, id),
+      or(ne(pages.userId, actor.userId), isNull(pages.userId)),
+    )).get()) {
+      return forbiddenError();
+    }
+    removeTheme(tx, id);
     return { success: true };
-  } catch (err) {
-    logError("deleteCustomTheme", err, { id });
-    return {
-      success: false,
-      error: "Something went wrong. Please try again.",
-      errorCode: "internal",
-    };
-  }
+  }, { behavior: "immediate" });
+  if (result.success) revalidateThemes("/");
+  return result;
+});
+
+export async function deleteCustomTheme(id: number): Promise<ActionResult> {
+  return runDeleteTheme(id);
 }

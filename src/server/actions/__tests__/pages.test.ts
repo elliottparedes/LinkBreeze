@@ -31,7 +31,7 @@ vi.mock("@/server/queries", () => ({
   countPagesByOwner: mocks.countPagesByOwner,
 }));
 
-import { createPageAction, updatePageAction, setPageThemeAction, deletePageAction } from "@/server/actions/pages";
+import { createPageAction, updatePageAction, deletePageAction } from "@/server/actions/pages";
 
 function fd(data: Record<string, string>): FormData {
   const f = new FormData();
@@ -273,19 +273,6 @@ describe("updatePageAction", () => {
     const res = await updatePageAction(
       fd({ pageId: "1", ogImageMode: "custom", ogImageUrl: "javascript:alert(1)" }),
     );
-    expect(res.success).toBe(false);
-  });
-});
-
-describe("setPageThemeAction", () => {
-  it("sets theme for a page", async () => {
-    const res = await setPageThemeAction(1, 3);
-    expect(res.success).toBe(true);
-  });
-
-  it("rejects when unauthenticated", async () => {
-    mocks.getSession.mockResolvedValue(null);
-    const res = await setPageThemeAction(1, 3);
     expect(res.success).toBe(false);
   });
 });

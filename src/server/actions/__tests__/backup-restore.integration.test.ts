@@ -1,7 +1,7 @@
 /**
  * Integration test: backup → mutate → restore round-trip.
  *
- * Verifies that exportBackupPayload() + restoreBackup() preserve exact data
+ * Verifies that getBackupPayload() + restoreBackup() preserve exact data
  * integrity across a full cycle, using the same sql.js (WASM SQLite) in-memory
  * database setup as the other integration tests.
  *
@@ -32,10 +32,8 @@ vi.mock("@/lib/demo", () => ({
 }));
 
 // Import the server actions AFTER the mocks above are registered.
-import {
-  exportBackupPayload,
-  restoreBackup,
-} from "@/server/actions/data";
+import { restoreBackup } from "@/server/actions/data";
+import { getBackupPayload } from "@/server/backup-restore";
 
 /**
  * Build a FormData carrying a backup payload as the "file" entry, mirroring
@@ -53,7 +51,7 @@ function backupFormData(payload: unknown): FormData {
 }
 
 describe("[integration] backup → restore round-trip", () => {
-  // Snapshot captured from exportBackupPayload() against the seed data.
+  // Snapshot captured from getBackupPayload() against the seed data.
   // Typed loosely (the backup wire format) so field-level assertions stay
   // readable below.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -152,6 +150,7 @@ describe("[integration] backup → restore round-trip", () => {
     db.insert(schema.themes)
       .values({
         name: "Branded",
+        ownerId: 1,
         isActive: false,
         isPreset: false,
         mode: "dark",
@@ -186,7 +185,7 @@ describe("[integration] backup → restore round-trip", () => {
   });
 
   it("captures a snapshot reflecting the seed data", async () => {
-    snapshot = await exportBackupPayload();
+    snapshot = await getBackupPayload();
 
     expect(snapshot.version).toBe(1);
     expect(snapshot.exportedAt).toBeTruthy();
@@ -202,7 +201,7 @@ describe("[integration] backup → restore round-trip", () => {
   it("restores the exact seed data after the DB is mutated", async () => {
     // Re-capture in case the previous test ran out of order or snapshot is
     // undefined (defensive — beforeAll ordering makes this a no-op normally).
-    if (!snapshot) snapshot = await exportBackupPayload();
+    if (!snapshot) snapshot = await getBackupPayload();
 
     // ── Mutate the DB after the snapshot ──────────────────────────────
     // add two extra links
@@ -304,6 +303,7 @@ describe("[integration] backup → restore round-trip", () => {
     expect(fontRows[0]!.id).toBe(5);
     expect(fontRows[0]!.family).toBe("LB Custom 5");
     expect(themeByName["Branded"].fontFamily).toBe("custom:5");
+    expect(themeByName["Branded"].ownerId).toBe(1);
 
     // The dangling custom:99 ref (font not in the backup) is reset to inter.
     expect(themeByName["Dangling"].fontFamily).toBe("inter");

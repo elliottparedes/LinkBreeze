@@ -3,14 +3,16 @@ import {
   getAllThemes,
   getActiveTheme,
   getThemeById,
+  getThemeLibrary,
   seedThemesIfEmpty,
   getAllPages,
   getAllCustomFonts,
   getCapabilitiesForUser,
 } from "@/server/queries";
 import { getSession } from "@/lib/auth";
-import { pickVisiblePage } from "@/lib/ownership";
+import { canEditPage, pickVisiblePage } from "@/lib/ownership";
 import type { CustomFontMeta } from "@/lib/custom-fonts";
+import { canEditThemeInPlace } from "@/lib/theme-editing";
 import { ThemeManager } from "./theme-manager";
 
 export const dynamic = "force-dynamic";
@@ -36,19 +38,12 @@ export default async function ThemePage({
     pageParam ? Number(pageParam) : null,
   );
 
-  const [allThemes, active, fontRows] = await Promise.all([
-    getAllThemes(),
+  const [themes, active, pageTheme, fontRows] = await Promise.all([
+    caps.manageInstance ? getAllThemes() : getThemeLibrary(session.userId),
     getActiveTheme(),
+    activePage?.themeId ? getThemeById(activePage.themeId) : null,
     getAllCustomFonts(),
   ]);
-  const themes = caps.manageInstance
-    ? allThemes
-    : allThemes.filter((theme) => {
-        if (theme.isPreset) return true;
-        if (theme.isActive) return false;
-        const users = allPages.filter((page) => page.themeId === theme.id);
-        return users.length > 0 && users.every((page) => page.userId === session.userId);
-      });
 
   // Uploaded fonts (#82) — serialisable metadata for the client customizer.
   const customFonts: CustomFontMeta[] = fontRows.map((f) => ({
@@ -61,33 +56,30 @@ export default async function ThemePage({
     format: f.format,
   }));
 
-  // The theme the customizer edits: the page's own theme when set, else the
-  // globally active theme. This is what the public page renders for this
-  // page, so this is what "Customise" and "Duplicate" must target.
-  const pageTheme = activePage?.themeId
-    ? await getThemeById(activePage.themeId)
-    : null;
   const effective = pageTheme ?? active;
-  const ownsTheme =
-    caps.manageInstance ||
-    Boolean(
-      pageTheme &&
-        !pageTheme.isPreset &&
-        !pageTheme.isActive &&
-        allPages
-          .filter((page) => page.themeId === pageTheme.id)
-          .every((page) => page.userId === session.userId),
-    );
+  const otherThemeIds = new Set(allPages
+    .filter((page) => page.id !== activePage?.id)
+    .map((page) => page.themeId));
+  const editableThemeIds = (effective ? [...themes, effective] : themes)
+    .filter((theme) => canEditThemeInPlace(theme, {
+      ownerId: activePage?.userId ?? session.userId,
+      pageId: activePage?.id,
+      manageInstance: caps.manageInstance,
+      usedByOtherPage: otherThemeIds.has(theme.id),
+    }))
+    .map((theme) => theme.id);
 
   return (
     <div className="flex flex-col gap-8">
       <ThemeManager
+        key={`${session.userId}:${activePage?.id ?? "default"}`}
+        userId={session.userId}
         themes={themes}
-        activeId={active?.id ?? null}
         active={effective}
         pageId={activePage?.id}
-        pageThemeId={activePage?.themeId ?? null}
-        ownsTheme={ownsTheme}
+        canApply={activePage ? canEditPage(caps, session, activePage) : caps.manageInstance}
+        manageInstance={caps.manageInstance}
+        editableThemeIds={editableThemeIds}
         customFonts={customFonts}
         pageBgAdjustment={{
           fit: activePage?.backgroundFitOverride ?? null,

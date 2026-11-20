@@ -5,7 +5,6 @@ import { localizeActionError } from "@/lib/action-error-i18n";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { Trash2, Upload } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { updateProfile } from "@/server/actions/profile";
 import { updatePageAction } from "@/server/actions/pages";
 import { uploadAvatar } from "@/server/actions/uploads";
@@ -42,7 +41,7 @@ function PlatformIcon({ platform, className }: { platform: SocialPlatform; class
   return (
     <span
       className={className}
-      aria-label={getPlatformLabel(platform)}
+      aria-hidden="true"
       dangerouslySetInnerHTML={{ __html: getSocialIconSvg(platform).replace('width="24" height="24"', 'width="16" height="16"') }}
     />
   );
@@ -78,6 +77,13 @@ export function ProfileForm({ profile, pageId }: ProfileFormProps) {
   const [socialLinks, setSocialLinks] = React.useState<SocialLink[]>(
     profile?.socialLinks ?? [],
   );
+  const [platformSearch, setPlatformSearch] = React.useState("");
+  const search = platformSearch.trim().toLowerCase();
+  const visiblePlatforms = SUPPORTED_PLATFORMS.filter((platform) =>
+    getPlatformLabel(platform).toLowerCase().includes(search) ||
+    (platform === "x" && "twitter".includes(search)),
+  );
+  const addedPlatforms = new Set(socialLinks.map(({ platform }) => platform === "twitter" ? "x" : platform));
   const startTransition = (fn: () => Promise<void>) => void fn();
   const [avatarUrl, setAvatarUrl] = React.useState(profile?.avatarUrl ?? "");
   const [bannerUrl, setBannerUrl] = React.useState(profile?.bannerUrl ?? "");
@@ -162,8 +168,7 @@ export function ProfileForm({ profile, pageId }: ProfileFormProps) {
         setAvatarAdjOpen(true);
         reloadPreview();
         // Persist the new URL through the same autosave path as typing.
-        // rAF lets React commit the controlled input value before the
-        // flush reads FormData (same pattern as addSocialPlatform).
+        // Let React commit the controlled input value before reading FormData.
         requestAnimationFrame(schedule);
       } else {
         setUploadError(localizeActionError(tErr, res.error));
@@ -205,9 +210,9 @@ export function ProfileForm({ profile, pageId }: ProfileFormProps) {
 
   const addSocialPlatform = (platform: SocialPlatform) => {
     setSocialLinks((prev) => [...prev, { platform, url: "" }]);
-    // Programmatic change: the new chip exists in state but not in the DOM
-    // yet — schedule from the next tick so the flush reads the rendered row.
-    requestAnimationFrame(schedule);
+    requestAnimationFrame(() => {
+      formRef.current?.querySelector<HTMLInputElement>(`[data-social-platform="${platform}"]`)?.focus();
+    });
   };
 
   const updateSocial = (index: number, field: keyof SocialLink, value: string) => {
@@ -436,55 +441,70 @@ export function ProfileForm({ profile, pageId }: ProfileFormProps) {
             {/* Existing social links with inline icon */}
             {socialLinks.length > 0 && (
               <div className="flex flex-col gap-2">
-                {socialLinks.map((item, i) => (
-                  <div key={`${item.platform}-${i}`} className="flex items-center gap-2">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet/15 text-lavender">
-                      <PlatformIcon platform={item.platform as SocialPlatform} />
+                {socialLinks.map((item, i) => {
+                  const platform = item.platform as SocialPlatform;
+                  const urlLabel = t("socialPlatformUrl", { platform: getPlatformLabel(platform) });
+                  return (
+                    <div key={`${item.platform}-${i}`} className="flex items-center gap-2">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet/15 text-lavender">
+                        <PlatformIcon platform={platform} />
+                      </div>
+                      <Input
+                        data-social-platform={platform}
+                        aria-label={urlLabel}
+                        value={item.url}
+                        onChange={(e) => updateSocial(i, "url", e.target.value)}
+                        placeholder={urlLabel}
+                        className="min-w-0 flex-1"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        type="button"
+                        onClick={() => removeSocial(i)}
+                        className="text-destructive"
+                        aria-label={t("removeSocial")}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
                     </div>
-                    <Input
-                      value={item.url}
-                      onChange={(e) => updateSocial(i, "url", e.target.value)}
-                      placeholder={`${getPlatformLabel(item.platform as SocialPlatform)} URL…`}
-                      className="min-w-0 flex-1"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      type="button"
-                      onClick={() => removeSocial(i)}
-                      className="text-destructive"
-                      aria-label={t("removeSocial")}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
-            {/* Platform picker — icon chips grid */}
             <Separator className="my-1" />
-            <p className="text-xs font-medium text-muted-foreground">{t("addAPlatform")}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {SUPPORTED_PLATFORMS.map((p) => {
-                const alreadyAdded = socialLinks.some((s) => s.platform === p);
-                return (
-                  <button
-                    key={p}
+            <FormField label={t("addAPlatform")} htmlFor="social-platform-search">
+              <Input
+                id="social-platform-search"
+                type="search"
+                aria-label={t("searchPlatforms")}
+                placeholder={t("searchPlatforms")}
+                value={platformSearch}
+                onChange={(e) => setPlatformSearch(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+              />
+            </FormField>
+            {visiblePlatforms.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {visiblePlatforms.map((platform) => (
+                  <Button
+                    key={platform}
                     type="button"
-                    disabled={alreadyAdded}
-                    title={getPlatformLabel(p)}
-                    onClick={() => addSocialPlatform(p)}
-                    className={cn(
-                      "flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-all hover:scale-110 hover:border-violet/30 hover:bg-violet/15 hover:text-lavender",
-                      alreadyAdded && "pointer-events-none opacity-30",
-                    )}
+                    variant="outline"
+                    size="sm"
+                    disabled={addedPlatforms.has(platform)}
+                    onClick={() => addSocialPlatform(platform)}
                   >
-                    <PlatformIcon platform={p} />
-                  </button>
-                );
-              })}
-            </div>
+                    <PlatformIcon platform={platform} />
+                    {getPlatformLabel(platform)}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+            <p role="status" className={visiblePlatforms.length ? "sr-only" : "text-sm text-muted-foreground"}>
+              {visiblePlatforms.length ? "" : t("noMatchingPlatforms")}
+            </p>
           </CardContent>
         </Card>
       </form>

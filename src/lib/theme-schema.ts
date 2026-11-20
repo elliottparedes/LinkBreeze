@@ -2,11 +2,10 @@ import { z } from "zod";
 
 /**
  * Theme validation schema — the single source of truth for what the
- * customizeActiveTheme server action accepts.
+ * theme editor accepts.
  *
  * Extracted from src/server/actions/theme.ts so the schema can be imported
  * by tests without dragging in the "use server" / next/cache runtime.
- * The server action re-exports this as `customSchema`.
  */
 
 const colorRegex = /^#[0-9a-fA-F]{3,8}$/;
@@ -57,7 +56,7 @@ export const customSchema = z.object({
     .optional(),
   backgroundValue: z.string().max(500).optional(),
   backgroundAngle: z.string().max(20).optional(),
-  backgroundImageUrl: safeMediaUrl.optional(),
+  backgroundImageUrl: z.union([safeMediaUrl, z.literal("")]).optional(),
   backgroundFit: z.enum(["cover", "contain", "tile"]).optional(),
   backgroundPosition: z
     .string()
@@ -72,7 +71,7 @@ export const customSchema = z.object({
   cardBackground: z.string().max(60).optional(),
   cardBorderColor: z.string().max(60).optional(),
   textColor: cssColor.optional(),
-  mutedTextColor: cssColor.optional(),
+  mutedTextColor: z.union([cssColor, z.literal("")]).optional(),
   mode: z.enum(["light", "dark"]).optional(),
   // Typography
   // fontFamily accepts a bundled id ("inter"), an uploaded font ref
@@ -145,7 +144,7 @@ export const customSchema = z.object({
 
 /**
  * Import/restore sanitizer for theme rows (theme-file import + backup
- * restore). The customizeActiveTheme action validates through customSchema,
+ * restore). The theme editor validates through customSchema,
  * but the import paths historically accepted raw strings — and every one
  * of these fields is interpolated into the public page's CSS (url('…'),
  * linear-gradient(…), --lb-* custom properties, font-family). A crafted
@@ -191,3 +190,10 @@ export function sanitizeThemeFields<T extends Record<string, unknown>>(
   }
   return { clean, dropped };
 }
+
+export const backgroundAdjustmentSchema = z.object({
+  fit: z.enum(["cover", "contain"]),
+  posX: z.number().min(0).max(1),
+  posY: z.number().min(0).max(1),
+  zoom: z.number().min(1).max(3),
+});

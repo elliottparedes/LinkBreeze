@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, unique, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index, unique, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 // ─── Users ─────────────────────────────────────────────
@@ -174,7 +174,7 @@ export const pages = sqliteTable("pages", {
   vcardEmail: text("vcard_email"),
   vcardPhone: text("vcard_phone"),
   vcardAddress: text("vcard_address"),
-});
+}, (table) => [index("pages_theme_id_idx").on(table.themeId)]);
 
 // ─── OIDC identities (#124) ──────────────────────────
 // Links a local user to an external OIDC identity. Separate table (never columns
@@ -362,7 +362,11 @@ export const themes = sqliteTable("themes", {
   // Meta
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(false),
   isPreset: integer("is_preset", { mode: "boolean" }).notNull().default(false),
-});
+  ownerId: integer("owner_id").references(() => users.id, { onDelete: "set null" }),
+}, (table) => [
+  index("themes_owner_name_idx").on(table.ownerId, table.name),
+  index("themes_preset_idx").on(table.isPreset),
+]);
 
 // ─── Custom fonts (uploaded woff2/woff, #82) ──────────
 export const customFonts = sqliteTable("custom_fonts", {

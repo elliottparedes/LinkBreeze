@@ -22,6 +22,7 @@ import { resolveCapabilities, type RoleCapabilities } from "@/lib/ownership";
 import { PRESETS } from "@/lib/theme-presets";
 import {
   eq,
+  ne,
   and,
   or,
   lt,
@@ -611,6 +612,12 @@ export async function getAllThemes(): Promise<ThemeRow[]> {
   return db.select().from(themes).orderBy(asc(themes.id));
 }
 
+export async function getThemeLibrary(userId: number): Promise<ThemeRow[]> {
+  return db.select().from(themes)
+    .where(or(eq(themes.isPreset, true), eq(themes.ownerId, userId)))
+    .orderBy(asc(themes.id));
+}
+
 export async function getThemeById(id: number): Promise<ThemeRow | null> {
   const rows = await db.select().from(themes).where(eq(themes.id, id)).limit(1);
   return rows[0] ?? null;
@@ -636,10 +643,13 @@ export async function getPagesUsingTheme(themeId: number): Promise<{ id: number;
 export async function setActiveTheme(id: number): Promise<void> {
   // Single transaction: deactivate all, then activate the target. If the
   // process crashes between them, the whole operation rolls back.
-  db.transaction((tx) => {
-    tx.update(themes).set({ isActive: false }).run();
-    tx.update(themes).set({ isActive: true }).where(eq(themes.id, id)).run();
-  });
+  db.transaction((tx) => markActiveTheme(tx, id));
+}
+
+export function markActiveTheme(tx: Pick<typeof db, "update">, id: number): void {
+  tx.update(themes).set({ isActive: false })
+    .where(and(eq(themes.isActive, true), ne(themes.id, id))).run();
+  tx.update(themes).set({ isActive: true }).where(eq(themes.id, id)).run();
 }
 
 export async function updateTheme(
@@ -659,43 +669,50 @@ export async function duplicateTheme(id: number, newName: string): Promise<Theme
   const source = rows[0];
   if (!source) throw new Error("Theme not found");
 
-  const { id: _id, isActive: _isActive, ...rest } = source;
-  void _id;
-  void _isActive;
+  return insertThemeCopy(db, source, newName, null);
+}
 
-  const inserted = await db
+export function insertThemeCopy(
+  tx: Pick<typeof db, "insert">,
+  source: ThemeRow,
+  name: string,
+  ownerId: number | null,
+): ThemeRow {
+  const { id: _id, ...design } = source;
+  void _id;
+  return tx
     .insert(themes)
     .values({
-      ...rest,
-      name: newName,
+      ...design,
+      name,
+      ownerId,
       isActive: false,
       isPreset: false,
     })
-    .returning();
-
-  return inserted[0];
+    .returning()
+    .get();
 }
 
-/** Check whether a theme with the given name already exists (exact match, case-sensitive). */
-export async function themeNameExists(name: string): Promise<boolean> {
-  const rows = await db
+/** Saved theme names are unique within an account. */
+export function themeNameExists(name: string, ownerId: number, tx: Pick<typeof db, "select"> = db): boolean {
+  return Boolean(tx
     .select({ id: themes.id })
     .from(themes)
-    .where(eq(themes.name, name.trim()))
-    .limit(1);
-  return rows.length > 0;
+    .where(and(eq(themes.ownerId, ownerId), eq(themes.name, name.trim())))
+    .get());
 }
 
 /** Delete a theme by id. Presets cannot be deleted. */
 export async function deleteTheme(id: number): Promise<void> {
   const row = await getThemeById(id);
   if (row?.isPreset) throw new Error("Built-in preset themes cannot be deleted");
-  await db.transaction((tx) => {
-    // Release any pages still pinned to this theme so no dangling themeId
-    // survives; those pages fall back to the globally active theme.
-    tx.update(pages).set({ themeId: null }).where(eq(pages.themeId, id)).run();
-    tx.delete(themes).where(eq(themes.id, id)).run();
-  });
+  db.transaction((tx) => removeTheme(tx, id));
+}
+
+export function removeTheme(tx: Pick<typeof db, "update" | "delete">, id: number): void {
+  // Pages pinned to this theme fall back to the instance default.
+  tx.update(pages).set({ themeId: null }).where(eq(pages.themeId, id)).run();
+  tx.delete(themes).where(eq(themes.id, id)).run();
 }
 
 /** Seed a set of attractive preset themes if the table is empty. */

@@ -1,26 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Save } from "lucide-react";
-import type { ThemeRow } from "@/server/queries";
-import { Button } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
-import { Input } from "@/components/ui/input";
+import type { ThemeRow } from "@/server/queries";
+import type { ImagePositionPickerValue } from "@/components/admin/image-position-picker";
 import {
   Card,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { ThemeLivePreview } from "./theme-live-preview";
 import {
   BackgroundSection,
@@ -87,7 +76,14 @@ export type CustomizerState = {
   textAnimation: string;
 };
 
-function stateFromTheme(active: ThemeRow): CustomizerState {
+export type BackgroundAdjustment = {
+  fit: string | null;
+  posX: number | null;
+  posY: number | null;
+  zoom: number | null;
+};
+
+export function stateFromTheme(active: ThemeRow): CustomizerState {
   return {
     backgroundType: active.backgroundType ?? "gradient",
     backgroundValue: active.backgroundValue ?? "",
@@ -155,30 +151,27 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export function ThemeCustomizer({
-  active,
-  onCustomize,
-  customPending,
-  customError,
-  isCustom,
-  onFork,
-  forkPending,
+  name,
+  state,
+  set,
+  pending,
+  readOnly,
+  description,
+  actions,
   customFonts = [],
   themes = [],
   onFontUploaded,
   onFontDeleted,
-  onAutoSaveState,
-  onAutoSaveFlush,
-  onAutoSaveBlur,
   bgAdjustment,
   onBgAdjustment,
 }: {
-  active: ThemeRow;
-  onCustomize: (formData: FormData) => void;
-  customPending: boolean;
-  customError: string | null;
-  isCustom: boolean;
-  onFork: (name: string, formData: FormData) => void;
-  forkPending: boolean;
+  name: string;
+  state: CustomizerState;
+  set: (patch: Partial<CustomizerState>) => void;
+  pending: boolean;
+  readOnly: boolean;
+  description: string;
+  actions: React.ReactNode;
   /** Uploaded fonts (#82) — selectable alongside the bundled ones. */
   customFonts?: CustomFontMeta[];
   /** All themes — used by the font delete confirm (affected-theme list). */
@@ -186,99 +179,26 @@ export function ThemeCustomizer({
   /** Refresh after upload/delete so chips + usage counts stay accurate. */
   onFontUploaded?: () => void;
   onFontDeleted?: () => void;
-  /**
-   * Debounced autosave (Spec B): called on every controlled-state change with
-   * the full form snapshot; the parent debounce-flushes it as a normal save.
-   * Undefined for preset themes (fork dialog stays the only save path).
-   */
-  onAutoSaveState?: (formData: FormData) => void;
-  /** Called after an explicit save with the saved snapshot (autosave baseline). */
-  onAutoSaveFlush?: (formData: FormData) => void;
-  /** Called when the customizer area loses focus (flush pending autosave). */
-  onAutoSaveBlur?: () => void;
-  /** Per-upload background adjustment metadata from the page row (nullable). */
-  bgAdjustment?: { fit: string | null; posX: number | null; posY: number | null; zoom: number | null } | null;
-  /** Persist a background adjustment change (or null to reset) for the page. */
-  onBgAdjustment?: (v: { fit: "cover" | "contain"; posX: number; posY: number; zoom: number } | null) => void;
+  bgAdjustment?: BackgroundAdjustment | null;
+  onBgAdjustment?: (value: ImagePositionPickerValue | null) => void;
 }) {
   const t = useTranslations("theme");
-  const [state, setState] = React.useState<CustomizerState>(() => stateFromTheme(active));
-  const [forkOpen, setForkOpen] = React.useState(false);
-  const [forkName, setForkName] = React.useState("");
   const [tab, setTab] = React.useState<TabId>("background");
-  // Stable local aliases for the autosave callbacks (hooks below depend on
-  // them; TS narrows the optional props once here).
-  const autoSaveStateCb = onAutoSaveState;
-  const autoSaveFlushCb = onAutoSaveFlush;
-  const autoSaveBlurCb = onAutoSaveBlur;
-  const handleBgAdjustment = onBgAdjustment;
-
-  // Remount fields on theme switch (controlled state re-initialises).
-  const [themeKey, setThemeKey] = React.useState(active.id);
-  if (active.id !== themeKey) {
-    setThemeKey(active.id);
-    setState(stateFromTheme(active));
-  }
-
-  const set = (patch: Partial<CustomizerState>) => {
-    setState((s) => {
-      const next = { ...s, ...patch };
-      // Debounced autosave (Spec B): snapshot the new controlled state as a
-      // FormData on every change. The parent decides whether to schedule
-      // (custom themes) or ignore (presets keep the explicit fork-save).
-      if (autoSaveStateCb) {
-        const fd = new FormData();
-        for (const [k, v] of Object.entries(next)) fd.set(k, v);
-        fd.set("themeId", String(active.id));
-        autoSaveStateCb(fd);
-      }
-      return next;
-    });
-  };
-
-  const dirty = React.useMemo(() => {
-    const initial = stateFromTheme(active);
-    return Object.keys(initial).some(
-      (k) => initial[k as keyof CustomizerState] !== state[k as keyof CustomizerState],
-    );
-  }, [state, active]);
-
-  const formData = React.useCallback(() => {
-    const fd = new FormData();
-    for (const [k, v] of Object.entries(state)) fd.set(k, v);
-    fd.set("themeId", String(active.id));
-    return fd;
-  }, [state, active.id]);
-
-  const handleSave = () => {
-    if (!dirty) return;
-    if (isCustom) {
-      const fd = formData();
-      onCustomize(fd);
-      // Explicit save becomes the autosave baseline — the next scheduled
-      // flush skips re-sending identical state.
-      autoSaveFlushCb?.(fd);
-    } else {
-      setForkName(`${active.name} (copy)`);
-      setForkOpen(true);
-    }
-  };
 
   return (
-    <>
-      <Card
-        className="w-full"
-        onBlurCapture={() => autoSaveBlurCb?.()}
-      >
-        <CardHeader className="pb-4">
-          <CardTitle>{t("customiseTitle", { name: active.name })}</CardTitle>
-          <CardDescription>{t("everyChangePreviewsLiveChangesApplyOnSav")}</CardDescription>
+      <Card className="w-full">
+        <CardHeader className="flex flex-wrap items-start justify-between gap-3 pb-4">
+          <div className="grid gap-1">
+            <CardTitle>{readOnly ? name : t("customiseTitle", { name })}</CardTitle>
+            <CardDescription aria-live="polite">{description}</CardDescription>
+          </div>
+          {actions}
         </CardHeader>
         <div className="flex flex-col gap-6 px-6 pb-4 xl:flex-row">
           {/* Vertical tab rail (horizontal strip below xl) */}
-          <nav
+          {!readOnly ? <nav
             aria-label={t("customizerSections")}
-            className="flex shrink-0 gap-1 overflow-x-auto pb-1 xl:w-40 xl:flex-col xl:pb-0"
+            className="order-1 flex shrink-0 gap-1 overflow-x-auto pb-1 xl:w-40 xl:flex-col xl:pb-0"
           >
             {TABS.map((tabDef) => (
               <button
@@ -295,17 +215,17 @@ export function ThemeCustomizer({
                 {t(tabDef.label)}
               </button>
             ))}
-          </nav>
+          </nav> : null}
 
           {/* Fields area */}
-          <div className="min-w-0 flex-1">
+          {!readOnly ? <fieldset className="order-3 min-w-0 flex-1 xl:order-2" disabled={pending}>
             {tab === "background" ? (
               <>
                 <BackgroundSection
                   s={state}
                   set={set}
                   bgAdjustment={bgAdjustment}
-                  onBgAdjustment={handleBgAdjustment}
+                  onBgAdjustment={onBgAdjustment}
                 />
                 <div className="mt-6">
                   <ColorsSection s={state} set={set} />
@@ -335,59 +255,15 @@ export function ThemeCustomizer({
             ) : null}
             {tab === "profile" ? <ProfileSection s={state} set={set} /> : null}
             {tab === "effects" ? <EffectsSection s={state} set={set} /> : null}
-          </div>
+          </fieldset> : null}
 
           {/* Theme visualizer — sticky on wide screens */}
-          <div className="mx-auto w-full shrink-0 xl:sticky xl:top-20 xl:w-[268px]">
-            <ThemeLivePreview state={state} customFonts={customFonts} />
+          <div className="order-2 mx-auto h-[276px] w-[144px] shrink-0 xl:sticky xl:top-20 xl:order-3 xl:h-[460px] xl:w-[268px]">
+            <div className="w-[240px] origin-top-left scale-[.6] xl:scale-100">
+              <ThemeLivePreview state={state} customFonts={customFonts} bgAdjustment={bgAdjustment} />
+            </div>
           </div>
         </div>
-        <CardFooter className="flex flex-col gap-2">
-          {customError ? (
-            <p className="w-full text-xs text-destructive">{customError}</p>
-          ) : null}
-          <div className="flex w-full items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              {isCustom ? t("editingCustom") : t("presetCopyNote")}
-            </p>
-            <Button type="button" onClick={handleSave} disabled={customPending || forkPending || !dirty}>
-              <Save className="size-4" />
-              {customPending || forkPending ? t("saving") : dirty ? t("saveChanges") : t("saved")}
-            </Button>
-          </div>
-        </CardFooter>
       </Card>
-
-      {/* Fork dialog: saving a preset prompts for a copy name first */}
-      <Dialog open={forkOpen} onOpenChange={setForkOpen}>
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>{t("saveAsOwn")}</DialogTitle>
-            <DialogDescription>
-              {t("sharedPresetWarning", { name: active.name })}
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            value={forkName}
-            onChange={(e) => setForkName(e.target.value)}
-            placeholder={t("newThemeName")}
-            maxLength={100}
-          />
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setForkOpen(false)}>{t("cancel")}</Button>
-            <Button
-              type="button"
-              disabled={forkPending || !forkName.trim()}
-              onClick={() => {
-                onFork(forkName.trim().slice(0, 100), formData());
-                setForkOpen(false);
-              }}
-            >
-              {forkPending ? t("creating") : t("createSave")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
   );
 }

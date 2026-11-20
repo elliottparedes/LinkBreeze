@@ -6,6 +6,7 @@
  * font files into a virtual uploads dir.
  */
 import { describe, it, expect, beforeAll, vi } from "vitest";
+import path from "node:path";
 
 const fsMocks = vi.hoisted(() => {
   const files = new Map<string, Buffer>();
@@ -91,7 +92,7 @@ describe("[integration] theme export/import with custom fonts (#82)", () => {
         format: "woff2",
       })
       .run();
-    fsMocks.files.set("/tmp/lb-test-fonts-import/seedfont.woff2", woff2());
+    fsMocks.files.set(path.join("/tmp/lb-test-fonts-import", "seedfont.woff2"), woff2());
 
     db.insert(schema.themes)
       .values({
@@ -139,7 +140,7 @@ describe("[integration] theme export/import with custom fonts (#82)", () => {
     expect(theme).toBeDefined();
     expect(theme!.fontFamily).toBe(`custom:${imported!.id}`);
     expect(imported!.url).toMatch(/\/api\/uploads\/[0-9a-f]{24}\.woff2$/);
-    const written = fsMocks.files.get(`/tmp/lb-test-fonts-import/${imported!.url.split("/").pop()}`);
+    const written = fsMocks.files.get(path.join("/tmp/lb-test-fonts-import", imported!.url.split("/").pop()!));
     expect(written?.equals(woff2())).toBe(true);
   });
 

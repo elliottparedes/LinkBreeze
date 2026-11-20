@@ -17,20 +17,20 @@ import {
   analyticsClicks,
 } from "@/db/schema";
 import { demoGuard } from "@/lib/demo-guard";
+import { getSession } from "@/lib/auth";
 import {
   type ActionResult,
   validationError,
   conflictError,
+  unauthorizedError,
+  forbiddenError,
 } from "@/lib/errors";
 import { requireInstanceAdmin, requireInstanceAdminOrThrow } from "@/server/access";
 import { UPLOADS_DIR, ensureUploadsDir, sniffFontFormat } from "@/lib/uploads";
 import { parseCustomFontId, customFontFamily } from "@/lib/custom-fonts";
+import { applyBackupPayload, type BackupPayload } from "@/server/backup-restore";
 import {
-  applyBackupPayload,
-  getBackupPayload,
-  type BackupPayload,
-} from "@/server/backup-restore";
-import {
+  getCapabilitiesForUser,
   updateSetting,
 } from "@/server/queries";
 
@@ -122,12 +122,6 @@ const exportableThemeSchema = z.object({
 });
 
 type ExportableTheme = z.infer<typeof exportableThemeSchema>;
-/** Snapshot of all regenerable config (not analytics — that's CSV-exportable).
- *  Serialization lives in server/backup-restore.ts — the scheduled-backup
- *  feature (#83) shares the exact same payload. */
-export async function exportBackupPayload(): Promise<BackupPayload> {
-  return getBackupPayload();
-}
 /** Transactional restore: replace profile/links/settings/themes from a backup
  *  file. Rolls back on any error so a bad file never wipes current data.
  *  Validation + the transaction live in server/backup-restore.ts — the
@@ -303,9 +297,10 @@ export async function exportTheme(id: number): Promise<ExportableTheme> {
 
 /** Import a previously-exported theme, creating a new (inactive) copy. */
 export async function importTheme(json: string): Promise<ActionResult> {
-  // #124: capability gate — the role ROW decides, not the session hint.
-  const denied = await requireInstanceAdmin();
-  if (denied) return denied;
+  const session = await getSession();
+  if (!session) return unauthorizedError();
+  const { caps } = await getCapabilitiesForUser(session.userId);
+  if (!caps.manageInstance) return forbiddenError("Only instance admins can change instance settings");
   const blocked = demoGuard();
   if (blocked) return blocked;
 
@@ -331,7 +326,7 @@ export async function importTheme(json: string): Promise<ActionResult> {
   }
 
   const { themeNameExists, insertCustomFont, updateCustomFontFamily } = await import("@/server/queries");
-  if (await themeNameExists(t.name)) {
+  if (themeNameExists(t.name, session.userId)) {
     return conflictError("A theme with this name already exists");
   }
 
@@ -399,6 +394,7 @@ export async function importTheme(json: string): Promise<ActionResult> {
 
   await db.insert(themes).values({
     name: t.name,
+    ownerId: session.userId,
     backgroundType: t.backgroundType,
     backgroundValue: t.backgroundValue,
     backgroundAngle: t.backgroundAngle,
