@@ -438,7 +438,7 @@ const en = {
 
     slugHint: "The slug is the URL path. You can change it later.",
 
-    slugCharsHint: "Letters, numbers, and hyphens. This becomes your URL: /music",
+    slugCharsHint: "Letters, numbers, and hyphens. This becomes your URL: /{namespace}/music",
 
     keepTheLinks: "Keep the links",
 

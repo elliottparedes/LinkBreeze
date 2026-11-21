@@ -6,6 +6,8 @@ import { PRODUCT_NAME } from "../lib/brand";
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").notNull().unique(),
+  // Reserved the first time the account publishes a page under its handle.
+  pageNamespace: text("page_namespace").unique(),
   passwordHash: text("password_hash").notNull(),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   // #124 multi-user: role/capability + lifecycle status. NULL role (pre-124 row)
@@ -113,8 +115,7 @@ export const pages = sqliteTable("pages", {
   isPublished: integer("is_published", { mode: "boolean" }).notNull().default(true),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   // #124 multi-user: which account owns this page. NULL = legacy page (created
-  // before multi-user) — treated as owned by the sole admin. A user owns AT MOST
-  // one page in v1 (no unique constraint yet, keeps the door open for more).
+  // before multi-user) — treated as managed by an instance admin.
   userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
 
   // Page-specific settings (moved from global settings table in 0008)
@@ -175,7 +176,11 @@ export const pages = sqliteTable("pages", {
   vcardEmail: text("vcard_email"),
   vcardPhone: text("vcard_phone"),
   vcardAddress: text("vcard_address"),
-}, (table) => [index("pages_theme_id_idx").on(table.themeId)]);
+}, (table) => [
+  index("pages_theme_id_idx").on(table.themeId),
+  index("pages_slug_nocase_idx").on(sql`${table.slug} COLLATE NOCASE`),
+  index("pages_user_id_idx").on(table.userId),
+]);
 
 // ─── OIDC identities (#124) ──────────────────────────
 // Links a local user to an external OIDC identity. Separate table (never columns

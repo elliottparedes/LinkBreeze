@@ -1,5 +1,5 @@
 import { PKPass } from "passkit-generator";
-import { X509Certificate } from "node:crypto";
+import { createHash, X509Certificate } from "node:crypto";
 import { PRODUCT_NAME } from "@/lib/brand";
 import { renderPassIcon } from "./qr-icon";
 
@@ -104,6 +104,9 @@ export async function buildApplePass(
       `${input.origin}/${input.slug}`,
       ICON_SIZE,
     );
+    const serialSlug = input.slug.includes("/")
+      ? createHash("sha256").update(input.slug).digest("hex")
+      : input.slug;
 
     const pass = new PKPass(
       {
@@ -123,7 +126,7 @@ export async function buildApplePass(
         formatVersion: 1,
         passTypeIdentifier: creds.passTypeId,
         teamIdentifier: creds.teamId,
-        serialNumber: `linkbreeze-${input.slug}-${Date.now().toString(36)}`,
+        serialNumber: `linkbreeze-${serialSlug}-${Date.now().toString(36)}`,
         organizationName: input.title || input.slug,
         description: `${PRODUCT_NAME} card for ${input.slug}`,
         logoText: input.title || input.slug,

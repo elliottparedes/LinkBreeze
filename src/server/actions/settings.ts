@@ -16,7 +16,8 @@ const settingsSchema = z.object({
     .string()
     .min(1, "Slug is required")
     .max(64)
-    .regex(/^[a-zA-Z0-9_-]+$/, "Slug may only contain letters, numbers, hyphens and underscores"),
+    .regex(/^[a-zA-Z0-9_-]+$/, "Slug may only contain letters, numbers, hyphens and underscores")
+    .optional(),
   title: z.string().max(120).optional().default(""),
   description: z.string().max(300).optional().default(""),
   footerText: z.string().max(200).optional().default(""),
@@ -37,7 +38,7 @@ export async function updateSettings(formData: FormData): Promise<ActionResult> 
   if (denied) return denied;
 
   const parsed = settingsSchema.safeParse({
-    slug: formData.get("slug"),
+    slug: formData.get("slug") ?? undefined,
     title: formData.get("title") || "",
     description: formData.get("description") || "",
     footerText: formData.get("footerText") || "",
@@ -58,7 +59,7 @@ export async function updateSettings(formData: FormData): Promise<ActionResult> 
   // Settings are split across tabs (General / Integration / Appearance) —
   // saving one tab must not blank the others.
   const has = (key: string) => formData.has(key);
-  if (has("slug")) await updateSettingQuery("slug", d.slug);
+  if (d.slug !== undefined) await updateSettingQuery("slug", d.slug);
   if (has("title")) await updateSettingQuery("title", d.title);
   if (has("description")) await updateSettingQuery("description", d.description);
   if (has("footerText")) await updateSettingQuery("footerText", d.footerText);

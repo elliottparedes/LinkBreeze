@@ -23,6 +23,7 @@
  */
 
 import { domainToASCII } from "node:url";
+import { decodeSlugParam } from "./link-slug";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -221,14 +222,25 @@ function bindingOrigin(binding: DomainBinding, protocol: string): string {
  * (root + slug forms) and its own sub-resources / APIs. Anything else
  * page-shaped 404s. Non-page machinery (/go, assets, QR…) always passes.
  */
-export function isBoundPagePath(pathname: string, slug: string): boolean {
-  const p = pathname.replace(/\/+$/, "") || "/";
+function decodePagePath(pathname: string): string {
+  if (!pathname.includes("%")) return pathname;
+  return pathname.split("/").map((segment) => {
+    const decoded = decodeSlugParam(segment);
+    return /[/\\]/.test(decoded) ? segment : decoded;
+  }).join("/");
+}
+
+function matchesPagePath(p: string, slug: string): boolean {
   return (
     p === "/" ||
     p === `/${slug}` ||
     p === `/${slug}/privacy` ||
     p === `/${slug}/opengraph-image`
   );
+}
+
+export function isBoundPagePath(pathname: string, slug: string): boolean {
+  return matchesPagePath(decodePagePath(pathname.replace(/\/+$/, "") || "/"), slug);
 }
 
 /** Machinery paths that never participate in slug scoping. */
@@ -296,20 +308,17 @@ export function resolveHostRequest(input: ResolveInput): HostDecision {
   const hideSlugsOnUnknownHosts =
     policy.unknownFallback === "404" && host !== policy.primaryHost;
   if (policy.canonical === "301" && !hideSlugsOnUnknownHosts) {
-    const slugMatch = path.match(/^\/(@?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)(\/|$)/i);
-    if (slugMatch) {
-      const slug = slugMatch[1].toLowerCase();
-      const page = bindings.find(
-        (b) => b.pageSlug.toLowerCase() === slug && b.behavior === "serve",
-      );
-      const target = page ? primaryServeBinding(bindings, page.pageId) : undefined;
-      if (target && target.host !== host) {
-        return {
-          type: "redirect",
-          location: `${bindingOrigin(target, input.protocol)}${input.pathname}`,
-          status: 301,
-        };
-      }
+    const pagePath = decodePagePath(path).toLowerCase();
+    const target = pagePath === "/" ? undefined : bindings.find((b) =>
+      b.kind === "primary" && b.behavior === "serve" && b.status === "active" &&
+      matchesPagePath(pagePath, b.pageSlug.toLowerCase()),
+    );
+    if (target && target.host !== host) {
+      return {
+        type: "redirect",
+        location: `${bindingOrigin(target, input.protocol)}${input.pathname}`,
+        status: 301,
+      };
     }
     // Root on the primary host: follow the default-page redirect only if the
     // default page is bound; the proxy "pass" lets src/app/page.tsx resolve
@@ -323,7 +332,7 @@ export function resolveHostRequest(input: ResolveInput): HostDecision {
   // Only applies to page-shaped paths; machinery (API, /go, sitemap) and
   // admin (already gated above) keep their normal behavior on every host.
   if (policy.unknownFallback !== "path" && !isMachinePath(path) && !isAdminPath(path)) {
-    const looksLikeSlug = /^\/[a-z0-9][a-z0-9-]*(\/|$)/i.test(path);
+    const looksLikeSlug = /^\/@?[a-z0-9_][a-z0-9_-]*(\/|$)/i.test(decodePagePath(path));
     if (looksLikeSlug || path === "/") {
       if (policy.unknownFallback === "404") {
         return { type: "not_found" };

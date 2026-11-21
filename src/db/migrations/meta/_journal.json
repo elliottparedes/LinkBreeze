@@ -288,6 +288,13 @@
       "when": 1966777762000,
       "tag": "0040_linkquilt_footer",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1966777762100,
+      "tag": "0041_page_namespaces",
+      "breakpoints": true
     }
   ]
 }

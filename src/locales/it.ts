@@ -1,7 +1,7 @@
 /**
  * Italiano — locale admin UI.
  *
- * lastSyncedHash: 175f8e55b795 ← rigenerato da `npm run i18n:check -- --update`
+ * lastSyncedHash: cc36ad0678a8 ← rigenerato da `npm run i18n:check -- --update`
  * (mismatch = source inglese modificato, risincronizzare questo file)
  */
 import type { Messages } from "./en";
@@ -430,7 +430,7 @@ const it: Messages = {
 
     slugHint: "Lo slug è il percorso URL. Puoi cambiarlo in seguito.",
 
-    slugCharsHint: "Lettere, numeri e trattini. Diventerà il tuo URL: /music",
+    slugCharsHint: "Lettere, numeri e trattini. Diventerà il tuo URL: /{namespace}/music",
 
     keepTheLinks: "Mantieni i link",
 

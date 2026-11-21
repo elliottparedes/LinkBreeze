@@ -34,8 +34,7 @@ const mocks = vi.hoisted(() => ({
   getPageById: vi.fn(async (): Promise<{ id: number; slug: string; userId: number } | null> => null),
   getSetting: vi.fn(async (): Promise<string | null> => null),
   updateSetting: vi.fn(async () => undefined),
-  createPage: vi.fn(async () => ({ id: 50 })),
-  getAllPages: vi.fn(async (): Promise<{ id: number; slug: string }[]> => []),
+  provisionAccountPage: vi.fn(async () => undefined),
   getRoleById: vi.fn(async (): Promise<Record<string, unknown> | null> => null),
   listInstanceAdminIds: vi.fn(async (): Promise<number[]> => [1, 2]),
   getCapabilitiesForUser: vi.fn(async (userId: number): Promise<{ roleText: string; caps: { pagesLimit: number | null; visibility: string; manageAccounts: boolean; manageInstance: boolean } }> => ({
@@ -67,8 +66,7 @@ vi.mock("@/server/queries", () => ({
   getPageById: mocks.getPageById,
   getSetting: mocks.getSetting,
   updateSetting: mocks.updateSetting,
-  createPage: mocks.createPage,
-  getAllPages: mocks.getAllPages,
+  provisionAccountPage: mocks.provisionAccountPage,
   getRoleById: mocks.getRoleById,
   listInstanceAdminIds: mocks.listInstanceAdminIds,
   getCapabilitiesForUser: mocks.getCapabilitiesForUser,
@@ -121,7 +119,6 @@ beforeEach(() => {
   mocks.getPageByOwner.mockResolvedValue(null);
   mocks.getPageById.mockResolvedValue(null);
   mocks.getRoleById.mockResolvedValue(null);
-  mocks.getAllPages.mockResolvedValue([]);
   mocks.getSetting.mockResolvedValue(null); // accountPagePolicy default: per_user
   seedUsers([
     { id: 1, role: "admin", status: "active" },
@@ -212,18 +209,17 @@ describe("createAccountAction", () => {
     expect(mocks.createUser).not.toHaveBeenCalled();
   });
 
-  it("2B.4 page policy per_user (default): provisions the account's own page, slug collision-safe", async () => {
-    mocks.getAllPages.mockResolvedValue([{ id: 1, slug: "bob" }]);
+  it("2B.4 page policy per_user (default): provisions the account's home page", async () => {
     const res = await createAccountAction(fd({ username: "bob", password: "Password1" }));
     expect(res.success).toBe(true);
-    expect(mocks.createPage).toHaveBeenCalledWith({ slug: "bob-2", title: "bob", userId: 9 });
+    expect(mocks.provisionAccountPage).toHaveBeenCalledWith(9, "bob");
   });
 
   it("2B.4 page policy manual: NO page is provisioned", async () => {
     mocks.getSetting.mockResolvedValue("manual");
     const res = await createAccountAction(fd({ username: "bob", password: "Password1" }));
     expect(res.success).toBe(true);
-    expect(mocks.createPage).not.toHaveBeenCalled();
+    expect(mocks.provisionAccountPage).not.toHaveBeenCalled();
   });
 
   it("rejects duplicate usernames with conflict", async () => {

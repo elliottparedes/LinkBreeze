@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPageBySlug, getActiveLinks } from "@/server/queries";
+import { pageSlugFromParams, type PageRouteParams } from "@/lib/page-path";
 import { isSlugServedOnHost } from "@/server/domains";
 import { pickRequestHost } from "@/lib/host-routing";
 import { rateLimit } from "@/lib/rate-limit";
@@ -36,7 +37,7 @@ function getOrigin(request: NextRequest): string {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<PageRouteParams> },
 ) {
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -64,7 +65,7 @@ export async function GET(
     );
   }
 
-  const { slug } = await params;
+  const slug = pageSlugFromParams(await params);
   // Exclusive-scope domains serve only their own page's pass (same rule as
   // the vCard route) — a bound exclusive host IS one page.
   const requestHost = pickRequestHost(

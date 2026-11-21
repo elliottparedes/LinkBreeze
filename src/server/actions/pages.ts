@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { demoGuard } from "@/lib/demo-guard";
 import {
+  type ActionError,
   type ActionResult,
   validationError,
   unauthorizedError,
@@ -15,13 +16,13 @@ import {
   logError,
 } from "@/lib/errors";
 import { canEditPage } from "@/lib/ownership";
-import { getCapabilitiesForUser, countPagesByOwner } from "@/server/queries";
+import { isReservedPageNamespace, isReservedSubpageSlug, PageSlugConflict, replacePageSlug, splitPageSlug } from "@/lib/page-path";
+import { getCapabilitiesForUser } from "@/server/queries";
 import {
-  createPage as createPageQuery,
+  createAccountPage,
   updatePage as updatePageQuery,
   deletePage as deletePageQuery,
   getDefaultPage,
-  getAllPages,
   getPageById,
 } from "@/server/queries";
 
@@ -34,7 +35,7 @@ import {
  */
 async function assertPageAccess(
   pageId: number,
-): Promise<{ page: Awaited<ReturnType<typeof getPageById>>; error: null } | { page: null; error: ActionResult }> {
+): Promise<{ page: NonNullable<Awaited<ReturnType<typeof getPageById>>>; error: null } | { page: null; error: ActionError }> {
   const session = await getSession();
   if (!session) return { page: null, error: unauthorizedError() };
   const page = await getPageById(pageId);
@@ -51,6 +52,8 @@ async function assertPageAccess(
 
 const slugSchema = z
   .string()
+  .trim()
+  .toLowerCase()
   .min(1, "Slug is required")
   .max(80, "Slug must be 80 characters or less")
   .regex(
@@ -87,7 +90,7 @@ export async function createPageAction(formData: FormData): Promise<ActionResult
   const { caps } = await getCapabilitiesForUser(session.userId);
 
   const parsed = createPageSchema.safeParse({
-    slug: (formData.get("slug") as string)?.trim().toLowerCase(),
+    slug: formData.get("slug"),
     title: formData.get("title") || "",
     bio: formData.get("bio") || "",
   });
@@ -95,39 +98,24 @@ export async function createPageAction(formData: FormData): Promise<ActionResult
     return validationError(parsed.error.issues[0]?.message ?? "Invalid input");
   }
 
-  // Check slug uniqueness.
-  const existing = await getAllPages();
-  if (existing.some((p) => p.slug.toLowerCase() === parsed.data.slug.toLowerCase())) {
-    return conflictError("A page with this slug already exists");
+  if (isReservedSubpageSlug(parsed.data.slug)) {
+    return validationError("This slug is reserved by the app");
   }
 
-  // #124: an owner's new page is owned by them; an admin creating a page leaves
-  // it unowned (legacy/admin-managed) unless they pass an explicit owner later.
-  const ownerUserId = session.role !== "admin" ? session.userId : null;
-
-  // 2B: a role's pagesLimit caps how many pages a member may OWN. Unlimited
-  // (NULL) or full-admin capabilities skip the count; import paths are
-  // instance-admin-gated so this is the only member-reachable creator.
-  if (ownerUserId != null && caps.pagesLimit != null) {
-    const owned = await countPagesByOwner(ownerUserId);
-    if (owned >= caps.pagesLimit) {
-      return forbiddenError(
-        `Your plan allows ${caps.pagesLimit} page${caps.pagesLimit === 1 ? "" : "s"}. Ask your administrator for more.`,
-      );
+  const result = await createAccountPage(session.userId, parsed.data, caps.pagesLimit);
+  if ("error" in result) {
+    if (result.error === "limit") {
+      return forbiddenError(`Your plan allows ${caps.pagesLimit} page${caps.pagesLimit === 1 ? "" : "s"}. Ask your administrator for more.`);
     }
+    return result.error === "conflict"
+      ? conflictError("A page with this slug already exists")
+      : unauthorizedError();
   }
-
-  const page = await createPageQuery({
-    slug: parsed.data.slug,
-    title: parsed.data.title,
-    bio: parsed.data.bio,
-    userId: ownerUserId,
-  });
 
   revalidatePath("/links");
   revalidatePath("/dashboard");
   revalidatePath("/");
-  return { success: true, pageId: page.id };
+  return { success: true, pageId: result.page.id };
 }
 
 const updatePageSchema = z.object({
@@ -353,15 +341,21 @@ export async function updatePageAction(formData: FormData): Promise<ActionResult
     }
   }
 
-  // Check slug uniqueness if slug is being changed.
-  if (updateData.slug) {
-    const all = await getAllPages();
-    if (all.some((p) => p.id !== pageId && p.slug.toLowerCase() === updateData.slug!.toLowerCase())) {
-      return conflictError("A page with this slug already exists");
-    }
+  const oldSlug = access.page.slug;
+  const { namespace, segment } = splitPageSlug(oldSlug);
+  const newSegment = updateData.slug;
+  const renamed = Boolean(newSegment && newSegment !== segment.toLowerCase());
+  if (newSegment && renamed &&
+      (namespace ? isReservedSubpageSlug(newSegment) : isReservedPageNamespace(newSegment))) {
+    return validationError("This slug is reserved by the app");
   }
 
-  await updatePageQuery(pageId, updateData);
+  try {
+    await updatePageQuery(pageId, updateData);
+  } catch (err) {
+    if (err instanceof PageSlugConflict) return conflictError(err.message);
+    throw err;
+  }
 
   // Save global consent text setting alongside page settings.
   const consentText = formData.get("consentText");
@@ -376,13 +370,10 @@ export async function updatePageAction(formData: FormData): Promise<ActionResult
   revalidatePath("/dashboard");
   revalidatePath("/settings");
   revalidatePath("/");
-  if (updateData.slug) {
-    revalidatePath(`/${updateData.slug}/privacy`, "layout");
-  }
   // OG metadata changes must reach the public page's generateMetadata.
-  const finalSlug = updateData.slug || (await getPageById(pageId))?.slug;
-  if (finalSlug) {
-    revalidatePath(`/${finalSlug}`, "layout");
+  revalidatePath(`/${oldSlug}`, "layout");
+  if (renamed && newSegment) {
+    revalidatePath(`/${replacePageSlug(oldSlug, newSegment)}`, "layout");
   }
   return { success: true };
 }

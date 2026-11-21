@@ -8,8 +8,7 @@ import {
   createUser,
   countPagesByOwner,
   getCapabilitiesForUser,
-  createPage,
-  getAllPages,
+  provisionAccountPage,
   getUserById,
 } from "@/server/queries";
 import {
@@ -18,7 +17,6 @@ import {
   resolveRoleFromGroups,
   type OidcEndpoints,
 } from "@/lib/oidc";
-import { normalizeSlug } from "@/lib/link-slug";
 
 /**
  * #124 Phase 3 — OIDC flow helpers (server-only, non-action so the callback
@@ -194,17 +192,6 @@ export function getOidcClientSecret(): string | null {
   return secret && secret.length > 0 ? secret : null;
 }
 
-/** Slug for a JIT-provisioned account page: username, -2/-3… on collision. */
-async function uniqueSlugFor(username: string): Promise<string> {
-  const base = normalizeSlug(username) || "user";
-  const taken = new Set((await getAllPages()).map((p) => p.slug.toLowerCase()));
-  if (!taken.has(base.toLowerCase())) return base;
-  for (let i = 2; ; i++) {
-    const candidate = `${base}-${i}`;
-    if (!taken.has(candidate.toLowerCase())) return candidate;
-  }
-}
-
 /** Username for a JIT account: preferred_username, sanitized, made unique. */
 async function uniqueUsername(preferred: string): Promise<string> {
   const base = preferred.replace(/[^a-zA-Z0-9_.-]/g, "").slice(0, 64) || "sso-user";
@@ -244,7 +231,7 @@ export async function provisionOidcUser(input: {
 
   const policy = await getSetting("accountPagePolicy");
   if (policy !== "manual") {
-    await createPage({ slug: await uniqueSlugFor(username), title: username, userId: user.id });
+    await provisionAccountPage(user.id, username);
   }
 
   const { linkOidcIdentity } = await import("@/server/queries");

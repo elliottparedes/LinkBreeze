@@ -5,6 +5,7 @@ import { pickRequestHost } from "@/lib/host-routing";
 import { rateLimit } from "@/lib/rate-limit";
 import { buildVCard, vcardFilename, pageToVCardInput } from "@/lib/wallet/vcard";
 import { parseVCardLinkConfig, buildCustomVCard } from "@/lib/vcard-link";
+import { pageSlugFromParams, type PageRouteParams } from "@/lib/page-path";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ function getOrigin(request: NextRequest): string {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<PageRouteParams> },
 ) {
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -51,7 +52,7 @@ export async function GET(
     );
   }
 
-  const { slug } = await params;
+  const slug = pageSlugFromParams(await params);
   // Exclusive-scope domains serve only their own page's vCard — an exclusive
   // bound host IS one page, so it must not hand out other pages' artifacts.
   const requestHost = pickRequestHost(
@@ -91,7 +92,7 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": "text/vcard; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${vcardFilename(page.slug)}"`,
+      "Content-Disposition": `attachment; filename="${vcardFilename(page.slug.replaceAll("/", "-"))}"`,
       "Cache-Control": "no-store",
     },
   });

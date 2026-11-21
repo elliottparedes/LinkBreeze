@@ -16,12 +16,13 @@ import {
   logError,
   validationError,
 } from "@/lib/errors";
-import { normalizeSlug, slugError } from "@/lib/link-slug";
+import { normalizeSlug } from "@/lib/link-slug";
+import { isReservedPageNamespace } from "@/lib/page-path";
 import { rateLimit } from "@/lib/rate-limit";
 import { recordAudit } from "@/server/audit";
-import { accountPagePolicy, publicSignupEnabled, uniqueSlugForUsername } from "@/server/actions/accounts";
+import { accountPagePolicy, publicSignupEnabled } from "@/server/actions/accounts";
 import {
-  createPage,
+  provisionAccountPage,
   createUser,
   getRoleByName,
   getUserByUsername,
@@ -90,7 +91,7 @@ export async function signupAction(formData: FormData): Promise<ActionResult> {
   const { username, password } = parsed.data;
 
   const slugBase = normalizeSlug(username);
-  if (slugError(slugBase) === "reserved") {
+  if (isReservedPageNamespace(slugBase)) {
     return validationError("This username is reserved");
   }
 
@@ -107,11 +108,7 @@ export async function signupAction(formData: FormData): Promise<ActionResult> {
       member ? { roleId: member.id } : {},
     );
     if ((await accountPagePolicy()) !== "manual") {
-      await createPage({
-        slug: await uniqueSlugForUsername(username),
-        title: username,
-        userId: user.id,
-      });
+      await provisionAccountPage(user.id, username);
     }
     await recordAudit(
       "account.created",

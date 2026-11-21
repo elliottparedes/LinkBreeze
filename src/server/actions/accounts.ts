@@ -24,8 +24,7 @@ import {
   setPageOwner,
   updatePage,
   getPageById,
-  createPage,
-  getAllPages,
+  provisionAccountPage,
   getRoleById,
   listInstanceAdminIds,
   getCapabilitiesForUser,
@@ -36,17 +35,7 @@ import { requireAccountsAdmin, requireInstanceAdmin } from "@/server/access";
 import { recordAudit } from "@/server/audit";
 import { requirePasswordConfirmation } from "@/server/actions/confirm";
 import { normalizeSlug, slugError, SLUG_ERRORS } from "@/lib/link-slug";
-
-/** First page slug for a new account: the username, made unique with -2/-3… */
-export async function uniqueSlugForUsername(username: string): Promise<string> {
-  const base = normalizeSlug(username) || "user";
-  const taken = new Set((await getAllPages()).map((p) => p.slug.toLowerCase()));
-  if (!taken.has(base.toLowerCase()) && !slugError(base)) return base;
-  for (let i = 2; ; i++) {
-    const candidate = `${base}-${i}`;
-    if (!taken.has(candidate.toLowerCase())) return candidate;
-  }
-}
+import { isReservedPageNamespace, isReservedSubpageSlug, PageSlugConflict, replacePageSlug, splitPageSlug } from "@/lib/page-path";
 
 /**
  * #124 2B.4 — instance page policy: 'per_user' (default) auto-creates each
@@ -155,11 +144,7 @@ export async function createAccountAction(formData: FormData): Promise<ActionRes
     const user = await createUser(username, await hashPassword(password), roleId ? { roleId } : {});
     // 2B.4 page policy: 'per_user' (default) provisions the account's own page.
     if (await accountPagePolicy() !== "manual") {
-      await createPage({
-        slug: await uniqueSlugForUsername(username),
-        title: username,
-        userId: user.id,
-      });
+      await provisionAccountPage(user.id, username);
     }
     await recordAudit("account.created", username, { roleId: roleId ?? null });
     // Every sibling action revalidates; create was the one that skipped it,
@@ -295,14 +280,17 @@ export async function deleteAccountAction(formData: FormData): Promise<ActionRes
         // "###" normalizes to "" — reject rather than silently clearing the
         // page's public address.
         if (!norm) return validationError("Slug is required");
-        const reason = slugError(norm);
+        const { namespace } = splitPageSlug(page.slug);
+        const reason = namespace
+          ? (isReservedSubpageSlug(norm) ? "reserved" : slugError(norm))
+          : (isReservedPageNamespace(norm) ? "reserved" : slugError(norm));
         if (reason) return validationError(SLUG_ERRORS[reason]);
         await updatePage(page.id, { slug: norm });
       } else if (releaseSlug === "on") {
         // Release: detach ownership and tombstone the slug so a new account
         // can claim it. The page content is preserved.
-        await setPageOwner(page.id, null);
         await updatePage(page.id, { slug: `deleted-${page.id}` });
+        await setPageOwner(page.id, null);
       }
       // Otherwise leave the page owned by the (now-deleted) user id, which
       // cascades to NULL via the FK — content preserved, slug reusable later.
@@ -310,6 +298,7 @@ export async function deleteAccountAction(formData: FormData): Promise<ActionRes
     await deleteUser(userId);
     await recordAudit("account.deleted", target.username);
   } catch (err) {
+    if (err instanceof PageSlugConflict) return conflictError(err.message);
     logError("deleteAccount", err, { userId });
     return {
       success: false,
@@ -377,17 +366,26 @@ export async function reassignPageSlugAction(formData: FormData): Promise<Action
   // in the app — but a fully-symbol input normalizes to "" and must be
   // rejected, never silently clear the page's public address.
   if (!norm) return validationError("Slug is required");
-  const reason = slugError(norm);
-  if (reason) return validationError(SLUG_ERRORS[reason]);
-
   const page = await getPageById(pageId);
   if (!page) return notFoundError("Page not found");
-  if (page.slug.toLowerCase() === norm.toLowerCase()) {
+  const nextSlug = replacePageSlug(page.slug, norm);
+  if (page.slug.toLowerCase() === nextSlug) {
     return { success: true }; // no-op
   }
-  await updatePage(pageId, { slug: norm });
+  const { namespace } = splitPageSlug(page.slug);
+  const reserved = namespace ? isReservedSubpageSlug(norm) : isReservedPageNamespace(norm);
+  const reason = reserved ? "reserved" : slugError(norm);
+  if (reason) return validationError(SLUG_ERRORS[reason]);
+
+  try {
+    await updatePage(pageId, { slug: norm });
+  } catch (err) {
+    if (err instanceof PageSlugConflict) return conflictError(err.message);
+    throw err;
+  }
   revalidatePath("/accounts");
-  revalidatePath(`/${norm}`, "layout");
+  revalidatePath(`/${page.slug}`, "layout");
+  revalidatePath(`/${nextSlug}`, "layout");
   return { success: true };
 }
 

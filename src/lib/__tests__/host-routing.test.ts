@@ -314,6 +314,17 @@ describe("resolveHostRequest — implicit www", () => {
 // ── Resolution: canonical 301 ─────────────────────────────────────────────
 
 describe("resolveHostRequest — canonical strategy", () => {
+  it("routes a subpage to its own domain without inheriting the home page's domain", () => {
+    const home = binding({ pageSlug: "jane" });
+    const music = binding({ id: 2, host: "music.jane.com", pageId: 2, pageSlug: "jane/music" });
+    expect(resolve({ host: "links.example.com", pathname: "/jane/music", bindings: [home] }).type).toBe("pass");
+    expect(resolve({ host: "links.example.com", pathname: "/jane/music/privacy", bindings: [home, music] })).toMatchObject({
+      type: "redirect",
+      location: "https://music.jane.com/jane/music/privacy",
+    });
+    expect(resolve({ host: "jane.com", pathname: "/jane/music", bindings: [home, music] }).type).toBe("not_found");
+  });
+
   it("301s slug paths on the primary host to the bound domain", () => {
     const decision = resolve({
       host: "links.example.com",

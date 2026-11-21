@@ -4,31 +4,27 @@ const mocks = vi.hoisted(() => ({
   demoBlock: vi.fn((): string | null => null),
   getSession: vi.fn(async (): Promise<{ userId: number; username: string; exp: number; pv: number; role?: string } | null> => ({ userId: 1, username: "admin", exp: Date.now() + 60000, pv: 1, role: "admin" })),
   revalidatePath: vi.fn(),
-  createPage: vi.fn(async () => ({ id: 5 })),
+  createAccountPage: vi.fn(async (): Promise<{ page: { id: number } } | { error: string }> => ({ page: { id: 5 } })),
   updatePage: vi.fn(async () => undefined),
   deletePage: vi.fn(async () => undefined),
   getDefaultPage: vi.fn(async () => ({ id: 1, slug: "home", userId: 1 })),
-  getAllPages: vi.fn(async (): Promise<{ id: number; slug: string }[]> => []),
   getPageById: vi.fn(async () => ({ id: 1, slug: "home", userId: 1 })),
   getCapabilitiesForUser: vi.fn(async (userId: number): Promise<{ roleText: string; caps: { pagesLimit: number | null; visibility: string; manageAccounts: boolean; manageInstance: boolean } }> => ({
     roleText: userId === 1 ? "admin" : "owner",
     caps: userId === 1 ? { pagesLimit: null, visibility: "manage_all", manageAccounts: true, manageInstance: true } : { pagesLimit: 1, visibility: "own", manageAccounts: false, manageInstance: false },
   })),
-  countPagesByOwner: vi.fn(async (): Promise<number> => 0),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("@/lib/auth", () => ({ getSession: mocks.getSession }));
 vi.mock("@/lib/demo", () => ({ demoBlock: mocks.demoBlock }));
 vi.mock("@/server/queries", () => ({
-  createPage: mocks.createPage,
+  createAccountPage: mocks.createAccountPage,
   updatePage: mocks.updatePage,
   deletePage: mocks.deletePage,
   getDefaultPage: mocks.getDefaultPage,
-  getAllPages: mocks.getAllPages,
   getPageById: mocks.getPageById,
   getCapabilitiesForUser: mocks.getCapabilitiesForUser,
-  countPagesByOwner: mocks.countPagesByOwner,
 }));
 
 import { createPageAction, updatePageAction, deletePageAction } from "@/server/actions/pages";
@@ -43,7 +39,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.demoBlock.mockReturnValue(null);
   mocks.getSession.mockResolvedValue({ userId: 1, username: "admin", exp: Date.now() + 60000, pv: 1, role: "admin" });
-  mocks.countPagesByOwner.mockResolvedValue(0);
+  mocks.createAccountPage.mockResolvedValue({ page: { id: 5 } });
   // Re-establish the default page owner — mockResolvedValue set by a test
   // (e.g. a member-owned page) persists past clearAllMocks.
   mocks.getPageById.mockResolvedValue({ id: 1, slug: "home", userId: 1 });
@@ -62,6 +58,7 @@ describe("createPageAction", () => {
     const res = await createPageAction(fd({ slug: "my-page", title: "My Page", bio: "" }));
     expect(res.success).toBe(true);
     if (res.success) expect(res.pageId).toBe(5);
+    expect(mocks.createAccountPage).toHaveBeenCalledWith(1, { slug: "my-page", title: "My Page", bio: "" }, null);
   });
 
   it("rejects when unauthenticated", async () => {
@@ -92,10 +89,17 @@ describe("createPageAction", () => {
     expect((await createPageAction(fd({ slug: "@" }))).success).toBe(false);
   });
 
-  it("rejects duplicate slug", async () => {
-    mocks.getAllPages.mockResolvedValue([{ id: 1, slug: "exists" }]);
-    const res = await createPageAction(fd({ slug: "exists" }));
-    expect(res.success).toBe(false);
+  it.each(["other/music", "privacy", "opengraph-image"])("rejects %s as a page segment", async (slug) => {
+    expect((await createPageAction(fd({ slug }))).success).toBe(false);
+    expect(mocks.createAccountPage).not.toHaveBeenCalled();
+  });
+
+  it("reports a duplicate slug within the account", async () => {
+    mocks.createAccountPage.mockResolvedValue({ error: "conflict" });
+    expect(await createPageAction(fd({ slug: "exists" }))).toMatchObject({
+      success: false,
+      errorCode: "conflict",
+    });
   });
 
   it("2B: blocks page creation when the member's role pagesLimit is reached", async () => {
@@ -104,11 +108,11 @@ describe("createPageAction", () => {
       roleText: "owner",
       caps: { pagesLimit: 1, visibility: "own", manageAccounts: false, manageInstance: false },
     });
-    mocks.countPagesByOwner.mockResolvedValue(1);
+    mocks.createAccountPage.mockResolvedValue({ error: "limit" });
     const res = await createPageAction(fd({ slug: "second-page", title: "Second" }));
     expect(res.success).toBe(false);
     if (!res.success) expect(res.errorCode).toBe("forbidden");
-    expect(mocks.createPage).not.toHaveBeenCalled();
+    expect(mocks.createAccountPage).toHaveBeenCalledWith(7, expect.anything(), 1);
   });
 
   it("2B: a pagesLimit that still has room allows creation", async () => {
@@ -117,17 +121,15 @@ describe("createPageAction", () => {
       roleText: "owner",
       caps: { pagesLimit: 3, visibility: "own", manageAccounts: false, manageInstance: false },
     });
-    mocks.countPagesByOwner.mockResolvedValue(1);
     const res = await createPageAction(fd({ slug: "second-page", title: "Second" }));
     expect(res.success).toBe(true);
-    expect(mocks.createPage).toHaveBeenCalled();
+    expect(mocks.createAccountPage).toHaveBeenCalledWith(7, expect.anything(), 3);
   });
 
   it("2B: admins (unlimited pagesLimit) skip the count entirely", async () => {
-    mocks.countPagesByOwner.mockResolvedValue(99);
     const res = await createPageAction(fd({ slug: "admin-page", title: "Admin" }));
     expect(res.success).toBe(true);
-    expect(mocks.countPagesByOwner).not.toHaveBeenCalled();
+    expect(mocks.createAccountPage).toHaveBeenCalledWith(1, expect.anything(), null);
   });
 });
 

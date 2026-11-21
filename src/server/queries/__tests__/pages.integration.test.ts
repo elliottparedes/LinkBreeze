@@ -6,8 +6,13 @@ import "./integration-setup";
 
 import {
   createPage,
+  createAccountPage,
+  createUser,
+  deleteUser,
+  getAccountPageNamespace,
   getAllPages,
   getPageBySlug,
+  provisionAccountPage,
   updatePage,
 } from "@/server/queries";
 
@@ -35,6 +40,57 @@ describe("[integration] createPage + getPageBySlug", () => {
     const slugs = all.map((p) => p.slug);
     expect(slugs).toContain("page-a");
     expect(slugs).toContain("page-b");
+  });
+});
+
+describe("[integration] account page paths", () => {
+  it("allows the same segment across accounts and rejects concurrent duplicates within one", async () => {
+    const elliott = await createUser("elliott", "test");
+    const sam = await createUser("sam", "test");
+    await provisionAccountPage(elliott.id, "Elliott");
+    await provisionAccountPage(sam.id, "Sam");
+    await createPage({ slug: "music", title: "Legacy page" });
+
+    const results = await Promise.all([
+      createAccountPage(elliott.id, { slug: "music", title: "Elliott's Music" }),
+      createAccountPage(elliott.id, { slug: "MUSIC", title: "Duplicate" }),
+      createAccountPage(sam.id, { slug: "music", title: "Sam's Music" }),
+    ]);
+    expect(results).toMatchObject([
+      { page: { slug: "elliott/music", userId: elliott.id } },
+      { error: "conflict" },
+      { page: { slug: "sam/music", userId: sam.id } },
+    ]);
+    expect(await getPageBySlug("elliott")).toMatchObject({ userId: elliott.id });
+    expect(await getPageBySlug("music")).toMatchObject({ title: "Legacy page" });
+
+    const page = await getPageBySlug("elliott/music");
+    await updatePage(page!.id, { slug: "shows" });
+    expect(await getPageBySlug("elliott/shows")).toMatchObject({ id: page!.id });
+    expect(await getPageBySlug("sam/music")).toMatchObject({ userId: sam.id });
+  });
+
+  it("holds a namespace when the home changes or another username normalizes to the same path", async () => {
+    const first = await createUser("Case_Test", "test");
+    const second = await createUser("case-test", "test");
+    await provisionAccountPage(first.id, first.username);
+    const home = await getPageBySlug("case-test");
+    await updatePage(home!.id, { slug: "custom-home" });
+    await provisionAccountPage(second.id, second.username);
+    expect(getAccountPageNamespace(first.id)).toBe("case-test");
+    expect(getAccountPageNamespace(second.id)).toBe("case-test-2");
+    await expect(updatePage(home!.id, { slug: "case-test-2" })).rejects.toThrow("already exists");
+  });
+
+  it("keeps preserved pages out of a replacement account's namespace", async () => {
+    const original = await createUser("retained", "test");
+    await createAccountPage(original.id, { slug: "music" });
+    await deleteUser(original.id);
+    const replacement = await createUser("retained", "test");
+    expect(await createAccountPage(replacement.id, { slug: "music" })).toMatchObject({
+      page: { slug: "retained-2/music" },
+    });
+    expect(await getPageBySlug("retained/music")).toMatchObject({ userId: null });
   });
 });
 

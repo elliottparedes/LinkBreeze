@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { RESERVED_SLUGS } from "@/lib/link-slug";
+import { isReservedPageNamespace } from "@/lib/page-path";
 import {
   getUserCount,
   getUserByUsername,
@@ -68,10 +68,7 @@ export async function POST(req: NextRequest) {
 
     // Public page lives at /{username} by default (not the legacy /u seed).
     const pageSlug = username.trim().toLowerCase();
-    if (
-      pageSlug &&
-      !RESERVED_SLUGS.includes(pageSlug as (typeof RESERVED_SLUGS)[number])
-    ) {
+    if (pageSlug && !isReservedPageNamespace(pageSlug)) {
       try {
         const page = await getDefaultPage();
         await updatePage(page.id, { slug: pageSlug });

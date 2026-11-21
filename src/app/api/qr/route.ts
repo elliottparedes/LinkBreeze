@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
   }
 
   const targetUrl = pageShareUrl(getOrigin(request), slug, "qr");
+  const filename = slug.replace(/[^a-z0-9_@-]+/gi, "-");
 
   // Saved per-page style (absent/garbage → defaults), then query overrides.
   const page = await getPageBySlug(slug);
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
         : null;
 
   const downloadHeaders: Record<string, string> = download
-    ? { "Content-Disposition": `attachment; filename="${PRODUCT_FILE_PREFIX}-${slug}.svg"` }
+    ? { "Content-Disposition": `attachment; filename="${PRODUCT_FILE_PREFIX}-${filename}.svg"` }
     : {};
 
   try {
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
           "Content-Type": "image/png",
           "Cache-Control": "public, max-age=3600, s-maxage=86400",
           ...(download
-            ? { "Content-Disposition": `attachment; filename="${PRODUCT_FILE_PREFIX}-${slug}.png"` }
+            ? { "Content-Disposition": `attachment; filename="${PRODUCT_FILE_PREFIX}-${filename}.png"` }
             : {}),
         },
       });

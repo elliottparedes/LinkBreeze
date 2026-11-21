@@ -19,6 +19,8 @@ import {
   invites,
 } from "@/db/schema";
 import { resolveCapabilities, type RoleCapabilities } from "@/lib/ownership";
+import { normalizeSlug } from "@/lib/link-slug";
+import { isReservedPageNamespace, PageSlugConflict, replacePageSlug } from "@/lib/page-path";
 import { PRESETS } from "@/lib/theme-presets";
 import {
   eq,
@@ -164,24 +166,97 @@ export interface CreatePageInput {
   userId?: number | null;
 }
 
-export async function createPage(data: CreatePageInput): Promise<PageRow> {
-  await ensureDefaultPage();
-  const maxOrder = await db.select({ m: sql<number>`max(${pages.orderIndex})` }).from(pages);
-  const nextOrder = (maxOrder[0]?.m ?? -1) + 1;
+function insertPage(store: Pick<typeof db, "select" | "insert">, data: CreatePageInput): PageRow {
+  const maxOrder = store.select({ m: sql<number>`max(${pages.orderIndex})` }).from(pages).get();
 
-  const inserted = await db
+  return store
     .insert(pages)
     .values({
       slug: data.slug,
       title: data.title ?? "",
       bio: data.bio ?? "",
-      orderIndex: nextOrder,
+      orderIndex: (maxOrder?.m ?? -1) + 1,
       isDefault: false,
       isPublished: true,
       userId: data.userId ?? null,
     })
-    .returning();
-  return inserted[0];
+    .returning().get();
+}
+
+export async function createPage(data: CreatePageInput): Promise<PageRow> {
+  await ensureDefaultPage();
+  return insertPage(db, data);
+}
+
+type PagePathReader = Pick<typeof db, "select">;
+
+function pageSlugMatches(slug: string) {
+  return sql`${pages.slug} = ${slug} COLLATE NOCASE`;
+}
+
+function accountPageNamespace(store: PagePathReader, userId: number): string | null {
+  const user = store
+    .select({ username: users.username, role: users.role, namespace: users.pageNamespace })
+    .from(users).where(eq(users.id, userId)).get();
+  if (!user || user.namespace) return user?.namespace ?? null;
+
+  const normalized = normalizeSlug(user.username);
+  const base = normalized && !isReservedPageNamespace(normalized) ? normalized : "user";
+  for (let ordinal = 1; ; ordinal++) {
+    const candidate = ordinal === 1 ? base : `${base}-${ordinal}`;
+    const reserved = store.select({ id: users.id }).from(users)
+      .where(eq(users.pageNamespace, candidate)).get();
+    if (reserved) continue;
+
+    const home = store.select({ userId: pages.userId, isDefault: pages.isDefault }).from(pages)
+      .where(pageSlugMatches(candidate)).get();
+    // Older instances left their bootstrap administrator's home unowned.
+    const legacyHome = home?.userId === null && home.isDefault &&
+      user.role === "admin" && candidate === normalized;
+    if (home && home.userId !== userId && !legacyHome) continue;
+
+    // An account may have been deleted while its public pages were retained.
+    // Leave those pages in their original namespace. '/' sorts before '0'.
+    const child = store.select({ id: pages.id }).from(pages)
+      .where(sql`${pages.slug} COLLATE NOCASE >= ${candidate + "/"} AND ${pages.slug} COLLATE NOCASE < ${candidate + "0"}`).get();
+    if (!child) return candidate;
+  }
+}
+
+export function getAccountPageNamespace(userId: number): string | null {
+  return accountPageNamespace(db, userId);
+}
+
+/** Provision the account home, or add a page below that account's handle. */
+export async function createAccountPage(
+  userId: number,
+  data: { slug?: string; title?: string; bio?: string },
+  pagesLimit: number | null = null,
+): Promise<{ page: PageRow } | { error: "account" | "limit" | "conflict" }> {
+  await ensureDefaultPage();
+  return db.transaction((tx) => {
+    const namespace = accountPageNamespace(tx, userId);
+    if (!namespace) return { error: "account" };
+    if (pagesLimit != null) {
+      const count = tx.select({ value: sql<number>`count(*)` }).from(pages)
+        .where(eq(pages.userId, userId)).get();
+      if ((count?.value ?? 0) >= pagesLimit) return { error: "limit" };
+    }
+
+    const slug = data.slug ? `${namespace}/${data.slug.toLowerCase()}` : namespace;
+    if (tx.select({ id: pages.id }).from(pages).where(pageSlugMatches(slug)).get()) {
+      return { error: "conflict" };
+    }
+    const page = insertPage(tx, { ...data, userId, slug });
+    tx.update(users).set({ pageNamespace: namespace })
+      .where(and(eq(users.id, userId), isNull(users.pageNamespace))).run();
+    return { page };
+  }, { behavior: "immediate" });
+}
+
+export async function provisionAccountPage(userId: number, username: string): Promise<void> {
+  const result = await createAccountPage(userId, { title: username });
+  if ("error" in result) throw new Error("Could not create the account home page");
 }
 
 export interface UpdatePageInput {
@@ -226,12 +301,34 @@ export interface UpdatePageInput {
 }
 
 export async function updatePage(id: number, data: UpdatePageInput): Promise<void> {
-  // If marking as default, un-default all others in the same transaction.
-  if (data.isDefault) {
+  // Keep rename checks and the write atomic. Non-slug edits still take a single query.
+  if (data.slug !== undefined || data.isDefault) {
     db.transaction((tx) => {
-      tx.update(pages).set({ isDefault: false }).run();
-      tx.update(pages).set(data).where(eq(pages.id, id)).run();
-    });
+      const changes = { ...data };
+      if (data.slug !== undefined) {
+        const page = tx.select({ slug: pages.slug, userId: pages.userId, isDefault: pages.isDefault })
+          .from(pages).where(eq(pages.id, id)).get();
+        if (!page) return;
+        const slug = replacePageSlug(page.slug, data.slug.toLowerCase());
+        if (slug.toLowerCase() !== page.slug.toLowerCase()) {
+          const collision = tx.select({ id: pages.id }).from(pages)
+            .where(and(pageSlugMatches(slug), ne(pages.id, id))).get();
+          if (collision) throw new PageSlugConflict();
+          if (!slug.includes("/")) {
+            const owner = tx.select({ id: users.id, username: users.username, role: users.role })
+              .from(users).where(eq(users.pageNamespace, slug)).get();
+            const legacyHome = page.userId === null && page.isDefault &&
+              owner?.role === "admin" && normalizeSlug(owner.username) === slug;
+            if (owner && owner.id !== page.userId && !legacyHome) throw new PageSlugConflict();
+          }
+          changes.slug = slug;
+        } else {
+          delete changes.slug;
+        }
+      }
+      if (changes.isDefault) tx.update(pages).set({ isDefault: false }).run();
+      if (Object.keys(changes).length) tx.update(pages).set(changes).where(eq(pages.id, id)).run();
+    }, { behavior: "immediate" });
   } else {
     await db.update(pages).set(data).where(eq(pages.id, id));
   }
@@ -943,8 +1040,8 @@ export async function listAccountSummaries(): Promise<AccountSummaryRow[]> {
   // multiplied a user across every page they own (admin owning 3 pages came
   // out as 3 rows with the same user id — duplicate React keys "1" and the
   // account listed three times). The page slug now comes from a correlated
-  // subquery pinned to the account's primary page (default first, then
-  // alphabetical), so the row count is exactly the account count.
+  // subquery pinned to the account's primary page (default, then flat
+  // paths, then page order), so each account appears once.
   return db
     .select({
       id: users.id,
@@ -957,7 +1054,8 @@ export async function listAccountSummaries(): Promise<AccountSummaryRow[]> {
       lastLoginAt: users.lastLoginAt,
       pageSlug: sql<
         string | null
-      >`(select p.slug from pages p where p.user_id = ${users.id} order by p.is_default desc, p.slug asc limit 1)`,
+      >`(select p.slug from pages p where p.user_id = ${users.id}
+        order by p.is_default desc, instr(p.slug, '/') > 0, p.order_index, p.id limit 1)`,
     })
     .from(users)
     .leftJoin(roles, eq(users.roleId, roles.id))
@@ -1299,7 +1397,8 @@ export async function setPageOwner(pageId: number, userId: number | null): Promi
 
 /** The page owned by a given user, if any. */
 export async function getPageByOwner(userId: number): Promise<PageRow | null> {
-  const rows = await db.select().from(pages).where(eq(pages.userId, userId)).limit(1);
+  const rows = await db.select().from(pages).where(eq(pages.userId, userId))
+    .orderBy(desc(pages.isDefault), sql`instr(${pages.slug}, '/') > 0`, asc(pages.orderIndex), asc(pages.id)).limit(1);
   return rows[0] ?? null;
 }
 

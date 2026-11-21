@@ -14,8 +14,7 @@ const mocks = vi.hoisted(() => ({
   getUserCount: vi.fn(async () => 1),
   getUserByUsername: vi.fn(async (): Promise<{ id: number } | null> => null),
   createUser: vi.fn(async () => ({ id: 9 })),
-  createPage: vi.fn(async () => ({ id: 50 })),
-  getAllPages: vi.fn(async () => [] as { slug: string }[]),
+  provisionAccountPage: vi.fn(async () => undefined),
   getRoleByName: vi.fn(async () => ({ id: 2, name: "Member" })),
   getSetting: vi.fn(async (key: string): Promise<string | null> => {
     if (key === "publicSignup") return "on";
@@ -38,8 +37,7 @@ vi.mock("@/server/queries", () => ({
   getUserCount: mocks.getUserCount,
   getUserByUsername: mocks.getUserByUsername,
   createUser: mocks.createUser,
-  createPage: mocks.createPage,
-  getAllPages: mocks.getAllPages,
+  provisionAccountPage: mocks.provisionAccountPage,
   getRoleByName: mocks.getRoleByName,
   getSetting: mocks.getSetting,
 }));
@@ -60,7 +58,6 @@ beforeEach(() => {
   mocks.getUserCount.mockResolvedValue(1);
   mocks.getUserByUsername.mockResolvedValue(null);
   mocks.createUser.mockResolvedValue({ id: 9 });
-  mocks.getAllPages.mockResolvedValue([]);
   mocks.getRoleByName.mockResolvedValue({ id: 2, name: "Member" });
   mocks.getSetting.mockImplementation(async (key: string) => {
     if (key === "publicSignup") return "on";
@@ -73,11 +70,7 @@ describe("signupAction", () => {
     const res = await signupAction(fd("alice"));
     expect(res.success).toBe(true);
     expect(mocks.createUser).toHaveBeenCalledWith("alice", "hashed-Password1", { roleId: 2 });
-    expect(mocks.createPage).toHaveBeenCalledWith({
-      slug: "alice",
-      title: "alice",
-      userId: 9,
-    });
+    expect(mocks.provisionAccountPage).toHaveBeenCalledWith(9, "alice");
     expect(mocks.createSession).toHaveBeenCalledWith(9, "alice");
     expect(mocks.recordAudit).toHaveBeenCalledWith(
       "account.created",

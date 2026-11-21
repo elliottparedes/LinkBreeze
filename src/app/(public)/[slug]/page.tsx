@@ -44,7 +44,7 @@ import {
   type ThemeInput,
 } from "@/lib/theme-tokens";
 import { parseCustomFontId, buildFontFaceCss } from "@/lib/custom-fonts";
-import { decodeSlugParam } from "@/lib/link-slug";
+import { pageSlugFromParams, type PageRouteParams } from "@/lib/page-path";
 import { parseTrafficSource } from "@/lib/traffic-source";
 
 export const revalidate = 60;
@@ -66,14 +66,13 @@ async function getOrigin(): Promise<string> {
 }
 
 interface PageProps {
-  params: Promise<{ slug: string }>;
+  params: Promise<PageRouteParams>;
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { slug: rawSlug } = await params;
-  const slug = decodeSlugParam(rawSlug);
+  const slug = pageSlugFromParams(await params);
   const page = await getPageBySlug(slug);
   if (!page) return { title: "Page not found" };
 
@@ -174,8 +173,8 @@ export default async function PublicPage({
   params,
   searchParams,
 }: PageProps & { searchParams: Promise<{ s?: string | string[] }> }) {
-  const [{ slug: rawSlug }, query] = await Promise.all([params, searchParams]);
-  const slug = decodeSlugParam(rawSlug);
+  const [route, query] = await Promise.all([params, searchParams]);
+  const slug = pageSlugFromParams(route);
   const source = parseTrafficSource(Array.isArray(query.s) ? query.s[0] : query.s);
   const page = await getPageBySlug(slug);
 

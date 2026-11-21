@@ -14,15 +14,14 @@ import {
   type ThemeInput,
 } from "@/lib/theme-tokens";
 import { parseCustomFontId, buildFontFaceCss } from "@/lib/custom-fonts";
-import { decodeSlugParam } from "@/lib/link-slug";
+import { pageSlugFromParams, type PageRouteParams } from "@/lib/page-path";
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<PageRouteParams>;
 }): Promise<Metadata> {
-  const { slug: rawSlug } = await params;
-  const slug = decodeSlugParam(rawSlug);
+  const slug = pageSlugFromParams(await params);
   const page = await getPageBySlug(slug);
   if (!page) return { title: "Privacy Policy" };
   return {
@@ -58,10 +57,9 @@ function hasEmbedLink(links: { url: string }[]): boolean {
 export default async function PrivacyPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<PageRouteParams>;
 }) {
-  const { slug: rawSlug } = await params;
-  const slug = decodeSlugParam(rawSlug);
+  const slug = pageSlugFromParams(await params);
   const page = await getPageBySlug(slug);
   if (!page) notFound();
 

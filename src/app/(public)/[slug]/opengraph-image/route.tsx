@@ -13,7 +13,7 @@ import {
   withAlpha,
   selectOgLinks,
 } from "@/lib/og-theme";
-import { decodeSlugParam } from "@/lib/link-slug";
+import { pageSlugFromParams, type PageRouteParams } from "@/lib/page-path";
 import { PRODUCT_NAME } from "@/lib/brand";
 
 export const runtime = "nodejs";
@@ -61,10 +61,9 @@ const NAME_MAX_CHARS = 48;
 
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<PageRouteParams> },
 ) {
-  const { slug: rawSlug } = await params;
-  const slug = decodeSlugParam(rawSlug);
+  const slug = pageSlugFromParams(await params);
   const h = await headers();
   const origin = process.env.BASE_URL
     ? process.env.BASE_URL.replace(/\/$/, "")

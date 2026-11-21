@@ -1,5 +1,7 @@
 "use client";
 
+import { splitPageSlug } from "@/lib/page-path";
+
 import * as React from "react";
 import { localizeActionError } from "@/lib/action-error-i18n";
 import { useTranslations } from "next-intl";
@@ -122,6 +124,7 @@ export function GeneralTab({
   vcard,
 }: GeneralTabProps) {
   const t = useTranslations("settings.general");
+  const { namespace, segment } = splitPageSlug(slug);
   const startTransition = (fn: () => Promise<void>) => void fn();
   const savedAction = useSavedAction();
   const router = useRouter();
@@ -182,14 +185,16 @@ export function GeneralTab({
             hint={t.rich("slugHintRich", { slug: slug || "u", code: (chunk) => <code>{chunk}</code> })}
           >
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">/</span>
+              <span className="max-w-full break-all text-sm text-muted-foreground">
+                {namespace ? `/${namespace}/` : "/"}
+              </span>
               <Input
                 id="slug"
                 name="slug"
-                defaultValue={slug}
+                defaultValue={segment}
                 required
                 pattern="^@?[a-zA-Z0-9_\-]+$"
-                maxLength={64}
+                maxLength={80}
                 className="max-w-48"
                 onChange={() => schedule()}
               />
@@ -258,7 +263,7 @@ export function GeneralTab({
       </form>
     </Card>
     {pageId ? <ContactCardCard pageId={pageId} values={vcard} /> : null}
-    <SearchVisibilityCard initialHidden={searchEngineHidden} slug={slug} />
+    <SearchVisibilityCard initialHidden={searchEngineHidden} />
     <LanguageCard />
     </div>
   );
@@ -268,10 +273,8 @@ export function GeneralTab({
 
 function SearchVisibilityCard({
   initialHidden,
-  slug,
 }: {
   initialHidden: boolean;
-  slug: string;
 }) {
   const t = useTranslations("settings.visibility");
   const tCommon = useTranslations("common");
@@ -287,9 +290,6 @@ function SearchVisibilityCard({
     setHidden(next);
     startTransition(async () => {
       const fd = new FormData();
-      // The settings schema requires slug on every updateSettings call
-      // (global settings live beside the default page's identity).
-      fd.set("slug", slug || "u");
       fd.set("searchEngineHidden", next ? "true" : "false");
       await updateSettings(fd);
       router.refresh();

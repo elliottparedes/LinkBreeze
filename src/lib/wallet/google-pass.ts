@@ -94,8 +94,13 @@ function buildJwtPayload(
   creds: GoogleWalletCreds,
   input: GooglePassInput,
 ): Record<string, unknown> {
-  const classId = `${creds.issuerId}.linkbreeze_${input.slug}`;
-  const objectId = `${creds.issuerId}.linkbreeze_${input.slug}_card`;
+  // Keep existing Wallet IDs for flat slugs. Nested paths need an
+  // unambiguous ID without '/', which Google Wallet does not permit.
+  const walletSlug = input.slug.includes("/")
+    ? `nested.${crypto.createHash("sha256").update(input.slug).digest("hex")}`
+    : input.slug;
+  const classId = `${creds.issuerId}.linkbreeze_${walletSlug}`;
+  const objectId = `${creds.issuerId}.linkbreeze_${walletSlug}_card`;
 
   const textModulesData = [
     ...input.links.map((l) => ({ header: l.title, body: l.url })),

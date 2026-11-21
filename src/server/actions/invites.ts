@@ -22,7 +22,7 @@ import { recordAudit } from "@/server/audit";
 import { requireAccountsAdmin } from "@/server/access";
 import {
   createInvite,
-  createPage,
+  provisionAccountPage,
   createUser,
   getRoleById,
   getValidInvite,
@@ -32,7 +32,7 @@ import {
   revokeInvite as revokeInviteQuery,
   listInvites,
 } from "@/server/queries";
-import { accountPagePolicy, uniqueSlugForUsername } from "@/server/actions/accounts";
+import { accountPagePolicy } from "@/server/actions/accounts";
 
 export interface InviteToken {
   token: string;
@@ -169,11 +169,7 @@ export async function acceptInviteAction(formData: FormData): Promise<ActionResu
 
   const user = await createUser(username, await hashPassword(password), invite.roleId ? { roleId: invite.roleId } : {});
   if (await accountPagePolicy() !== "manual") {
-    await createPage({
-      slug: await uniqueSlugForUsername(username),
-      title: username,
-      userId: user.id,
-    });
+    await provisionAccountPage(user.id, username);
   }
   await markInviteUsed(invite.id, user.id);
   await purgeExpiredInvites();

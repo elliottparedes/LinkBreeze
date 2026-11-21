@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { RESERVED_SLUGS } from "@/lib/link-slug";
-import { getSession } from "@/lib/auth";
+import { isReservedPageNamespace, PageSlugConflict } from "@/lib/page-path";
+import { requireInstanceAdmin } from "@/server/access";
 import {
   updateProfile as updateProfileQuery,
   updateSetting as updateSettingQuery,
@@ -21,14 +21,14 @@ const profileSchema = z.object({
     // Onboarding bypasses the pages-actions slug resolver, so enforce the
     // reserved-word blocklist here — slug "login" would otherwise make the
     // public page unreachable (ADMIN_RESERVED redirects it to /login).
-    .refine((v) => !RESERVED_SLUGS.includes(v.toLowerCase() as (typeof RESERVED_SLUGS)[number]), "That slug is reserved")
+    .refine((v) => !isReservedPageNamespace(v.toLowerCase()), "That slug is reserved")
     .transform((v) => v.toLowerCase()),
 });
 
 export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  const denied = await requireInstanceAdmin();
+  if (denied) {
+    return NextResponse.json(denied, { status: denied.errorCode === "unauthorized" ? 401 : 403 });
   }
 
   try {
@@ -43,14 +43,16 @@ export async function POST(req: NextRequest) {
 
     const { displayName, bio, slug } = parsed.data;
 
+    const defaultPage = await getDefaultPage();
+    await updatePage(defaultPage.id, { title: displayName, bio, slug });
     await updateProfileQuery({ displayName, bio });
     await updateSettingQuery("slug", slug);
 
-    const defaultPage = await getDefaultPage();
-    await updatePage(defaultPage.id, { title: displayName, bio, slug });
-
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    if (err instanceof PageSlugConflict) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 409 });
+    }
     return NextResponse.json(
       { success: false, error: "Failed to save profile" },
       { status: 500 },
@@ -59,9 +61,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  const denied = await requireInstanceAdmin();
+  if (denied) {
+    return NextResponse.json(denied, { status: denied.errorCode === "unauthorized" ? 401 : 403 });
   }
 
   try {
