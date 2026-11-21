@@ -1,64 +1,24 @@
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <!--
-    LinkBreeze Logo Mark — No Background (transparent)
-    Wind Streams concept, standalone mark for banner embedding.
-  -->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">LinkQuilt Pixel Quilt</title>
+  <desc id="desc">Nine colorful rounded tiles in a three-by-three quilt pattern.</desc>
   <defs>
-    <linearGradient id="wind1-nobg" x1="20%" y1="0%" x2="80%" y2="100%">
-      <stop offset="0%" stop-color="#533fd6"/>
-      <stop offset="50%" stop-color="#7c3aed"/>
-      <stop offset="100%" stop-color="#6d28d9"/>
-    </linearGradient>
-    <linearGradient id="wind2-nobg" x1="80%" y1="100%" x2="20%" y2="0%">
-      <stop offset="0%" stop-color="#7c3aed"/>
-      <stop offset="50%" stop-color="#a78bfa"/>
-      <stop offset="100%" stop-color="#c4b5fd"/>
-    </linearGradient>
-    <linearGradient id="windShine-nobg" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
-      <stop offset="50%" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
+    <linearGradient id="tile1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0EA5FF"/><stop offset="1" stop-color="#2B6CFF"/></linearGradient>
+    <linearGradient id="tile2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8ED9FF"/><stop offset="1" stop-color="#6AB8F5"/></linearGradient>
+    <linearGradient id="tile3" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#B064FF"/><stop offset="1" stop-color="#7D4DFF"/></linearGradient>
+    <linearGradient id="tile4" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#C7AAFF"/><stop offset="1" stop-color="#B192FF"/></linearGradient>
+    <linearGradient id="tile5" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3F73FF"/><stop offset="1" stop-color="#4F46E5"/></linearGradient>
+    <linearGradient id="tile6" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#84D6FF"/><stop offset="1" stop-color="#69B8F1"/></linearGradient>
+    <linearGradient id="tile7" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#B95BFF"/><stop offset="1" stop-color="#8C4DFF"/></linearGradient>
+    <linearGradient id="tile8" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#D0BBFF"/><stop offset="1" stop-color="#B79AF7"/></linearGradient>
+    <linearGradient id="tile9" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#684DFF"/><stop offset="1" stop-color="#4A35E8"/></linearGradient>
   </defs>
-
-  <!-- Upper ribbon -->
-  <path d="M 170 160
-           C 220 125, 290 120, 340 150
-           C 385 180, 400 240, 375 280
-           C 360 300, 335 295, 330 275
-           C 345 255, 350 220, 325 195
-           C 295 165, 245 165, 200 185
-           C 185 170, 175 162, 170 160 Z"
-        fill="url(#wind1-nobg)"/>
-
-  <!-- Shine overlay -->
-  <path d="M 170 160
-           C 220 125, 290 120, 340 150
-           C 385 180, 400 240, 375 280
-           C 360 300, 335 295, 330 275
-           C 345 255, 350 220, 325 195
-           C 295 165, 245 165, 200 185
-           C 185 170, 175 162, 170 160 Z"
-        fill="url(#windShine-nobg)"/>
-
-  <!-- Lower ribbon -->
-  <path d="M 342 352
-           C 292 387, 222 392, 172 362
-           C 127 332, 112 272, 137 232
-           C 152 212, 177 217, 182 237
-           C 167 257, 162 292, 187 317
-           C 217 347, 267 347, 312 327
-           C 327 342, 337 350, 342 352 Z"
-        fill="url(#wind2-nobg)"
-        opacity="0.92"/>
-
-  <!-- Breeze streams -->
-  <path d="M 190 250 C 230 240, 282 240, 322 250"
-        stroke="#c4b5fd" stroke-width="3" fill="none"
-        stroke-linecap="round" opacity="0.5"/>
-  <path d="M 205 266 C 235 258, 277 258, 307 266"
-        stroke="#ddd6fe" stroke-width="2" fill="none"
-        stroke-linecap="round" opacity="0.35"/>
-  <path d="M 225 282 C 240 276, 272 276, 287 282"
-        stroke="#a78bfa" stroke-width="1.5" fill="none"
-        stroke-linecap="round" opacity="0.25"/>
+  <rect x="112" y="112" width="96" height="96" rx="24" fill="url(#tile1)"/>
+  <rect x="208" y="112" width="96" height="96" rx="24" fill="url(#tile2)"/>
+  <rect x="304" y="112" width="96" height="96" rx="24" fill="url(#tile3)"/>
+  <rect x="112" y="208" width="96" height="96" rx="24" fill="url(#tile4)"/>
+  <rect x="208" y="208" width="96" height="96" rx="24" fill="url(#tile5)"/>
+  <rect x="304" y="208" width="96" height="96" rx="24" fill="url(#tile6)"/>
+  <rect x="112" y="304" width="96" height="96" rx="24" fill="url(#tile7)"/>
+  <rect x="208" y="304" width="96" height="96" rx="24" fill="url(#tile8)"/>
+  <rect x="304" y="304" width="96" height="96" rx="24" fill="url(#tile9)"/>
 </svg>
