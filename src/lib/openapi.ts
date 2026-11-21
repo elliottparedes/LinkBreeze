@@ -9,6 +9,7 @@
  * endpoint can never ship undocumented and the spec can never advertise a
  * route that does not exist.
  */
+import { PRODUCT_NAME } from "@/lib/brand";
 import { version } from "@/lib/version";
 
 type Json = Record<string, unknown>;
@@ -90,7 +91,7 @@ export function buildOpenApiDocument(): Json {
   return {
     openapi: "3.1.0",
     info: {
-      title: "LinkBreeze API",
+      title: `${PRODUCT_NAME} API`,
       version,
       license: { name: "MIT", identifier: "MIT" },
       description:

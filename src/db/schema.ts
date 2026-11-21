@@ -1,5 +1,6 @@
 import { sqliteTable, text, integer, real, index, unique, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { PRODUCT_NAME } from "../lib/brand";
 
 // ─── Users ─────────────────────────────────────────────
 export const users = sqliteTable("users", {
@@ -119,7 +120,7 @@ export const pages = sqliteTable("pages", {
   // Page-specific settings (moved from global settings table in 0008)
   seoTitle: text("seo_title").notNull().default(""),
   seoDescription: text("seo_description").notNull().default(""),
-  footerText: text("footer_text").notNull().default("Powered by LinkBreeze"),
+  footerText: text("footer_text").notNull().default(`Powered by ${PRODUCT_NAME}`),
   analyticsScript: text("analytics_script").notNull().default(""),
   customCss: text("custom_css").notNull().default(""),
   emailCapture: integer("email_capture", { mode: "boolean" }).notNull().default(false),

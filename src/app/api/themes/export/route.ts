@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { demoBlock } from "@/lib/demo";
+import { PRODUCT_FILE_PREFIX } from "@/lib/brand";
 import { exportTheme } from "@/server/actions/data";
 
 export const runtime = "nodejs";
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(payload, {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `attachment; filename="linkbreeze-theme-${safeName}-${today}.json"`,
+      "Content-Disposition": `attachment; filename="${PRODUCT_FILE_PREFIX}-theme-${safeName}-${today}.json"`,
       "Cache-Control": "no-store",
     },
   });

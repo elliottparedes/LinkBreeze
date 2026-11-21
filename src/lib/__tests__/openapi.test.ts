@@ -80,7 +80,7 @@ describe("OpenAPI document (#4)", () => {
       security: unknown[];
     };
     expect(doc.openapi).toBe("3.1.0");
-    expect(doc.info.title).toBe("LinkBreeze API");
+    expect(doc.info.title).toBe("LinkQuilt API");
     expect(doc.components.securitySchemes.bearerAuth).toEqual({
       type: "http",
       scheme: "bearer",
@@ -149,7 +149,7 @@ describe("spec hygiene (E.19)", () => {
 
   it("has every required top-level key with non-empty values", () => {
     expect(doc.openapi).toBe("3.1.0");
-    expect(doc.info.title).toBe("LinkBreeze API");
+    expect(doc.info.title).toBe("LinkQuilt API");
     expect(doc.info.version.length).toBeGreaterThan(0);
     expect(doc.info.description.length).toBeGreaterThan(20);
     expect(Array.isArray(doc.servers)).toBe(true);

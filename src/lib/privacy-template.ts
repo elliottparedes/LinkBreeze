@@ -1,5 +1,7 @@
+import { PRODUCT_NAME } from "./brand";
+
 /**
- * Auto-generated privacy policy template for LinkBreeze pages.
+ * Auto-generated privacy policy template for public pages.
  *
  * When an operator hasn't written a custom privacy policy, this function
  * generates one from their actual page configuration. The template reflects
@@ -12,7 +14,7 @@ export interface PrivacyTemplateInput {
   displayName: string;
   /** Public slug (e.g. "jane") */
   slug: string;
-  /** Whether built-in analytics are active (always true for LinkBreeze) */
+  /** Whether built-in analytics are active */
   hasAnalytics: boolean;
   /** Whether email capture is enabled on this page */
   hasEmailCapture: boolean;
@@ -133,11 +135,11 @@ export function generatePrivacyPolicy(input: PrivacyTemplateInput): string {
     ``,
   );
 
-  // Data controller
+  // Hosting and contact
   sections.push(
-    `## Data Controller`,
+    `## Hosting`,
     ``,
-    `This page is powered by LinkBreeze, a self-hosted link-in-bio tool. The page owner is the data controller for any personal data collected here. LinkBreeze's developers do not have access to any data from this deployment.`,
+    `This page is powered by ${PRODUCT_NAME}, a link-in-bio platform. Contact the page owner with questions about how this page handles your data.`,
     ``,
   );
 

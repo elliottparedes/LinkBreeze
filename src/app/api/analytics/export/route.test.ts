@@ -92,7 +92,7 @@ describe("GET /api/analytics/export", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toContain("text/csv");
     expect(res.headers.get("Content-Disposition")).toContain(
-      "linkbreeze-clicks-30d.csv",
+      "linkquilt-clicks-30d.csv",
     );
     const body = await res.text();
     const lines = body.split("\n");

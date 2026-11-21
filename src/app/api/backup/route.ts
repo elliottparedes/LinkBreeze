@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { PRODUCT_FILE_PREFIX } from "@/lib/brand";
 import { requireInstanceAdmin } from "@/server/access";
 import { getBackupPayload } from "@/server/backup-restore";
 
@@ -16,7 +17,7 @@ export async function GET() {
   return NextResponse.json(payload, {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `attachment; filename="linkbreeze-backup-${today}.json"`,
+      "Content-Disposition": `attachment; filename="${PRODUCT_FILE_PREFIX}-backup-${today}.json"`,
       "Cache-Control": "no-store",
     },
   });

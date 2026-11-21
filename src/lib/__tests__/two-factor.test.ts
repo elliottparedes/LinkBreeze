@@ -79,13 +79,13 @@ describe("otpauth URI", () => {
   it("builds a spec-compliant URI", () => {
     const uri = otpauthUri("JBSWY3DPEHPK3PXP", "admin");
     expect(uri).toBe(
-      "otpauth://totp/LinkBreeze:admin?issuer=LinkBreeze&secret=JBSWY3DPEHPK3PXP&algorithm=SHA1&digits=6&period=30",
+      "otpauth://totp/LinkQuilt:admin?issuer=LinkQuilt&secret=JBSWY3DPEHPK3PXP&algorithm=SHA1&digits=6&period=30",
     );
   });
 
   it("URL-encodes the username", () => {
     const uri = otpauthUri("JBSWY3DPEHPK3PXP", "weird user@x");
-    expect(uri).toContain("LinkBreeze:weird%20user%40x");
+    expect(uri).toContain("LinkQuilt:weird%20user%40x");
   });
 });
 

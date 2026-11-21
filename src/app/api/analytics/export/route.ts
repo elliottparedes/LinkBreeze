@@ -5,6 +5,7 @@ import { analyticsPageviews, analyticsClicks, links } from "@/db/schema";
 import { eq, gt } from "drizzle-orm";
 import { parseRange, sinceExpr } from "@/lib/analytics-range";
 import { csvCell } from "@/lib/csv";
+import { PRODUCT_FILE_PREFIX } from "@/lib/brand";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="linkbreeze-${metric}-${range}.csv"`,
+      "Content-Disposition": `attachment; filename="${PRODUCT_FILE_PREFIX}-${metric}-${range}.csv"`,
       "Cache-Control": "no-store",
     },
   });

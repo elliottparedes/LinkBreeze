@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { PRODUCT_NAME } from "@/lib/brand";
 import "./globals.css";
 
 const clashDisplay = localFont({
@@ -503,7 +504,7 @@ export async function generateMetadata(): Promise<Metadata> {
     // headers() not available at build time — keep the localhost fallback.
   }
 
-  // Root layout always uses the default LinkBreeze favicon.
+  // Root layout always uses the default product favicon.
   // Per-page favicons are set in the public route's generateMetadata().
   const icons: Metadata["icons"] = {
     icon: [
@@ -513,33 +514,31 @@ export async function generateMetadata(): Promise<Metadata> {
     apple: "/apple-touch-icon.png",
   };
 
+  const title = `${PRODUCT_NAME} — Link in bio`;
+  const description =
+    "Create your own link-in-bio page with customizable themes, analytics, and QR codes.";
+
   return {
-    title: "LinkBreeze — Self-hosted link-in-bio",
-    description:
-      "Self-hosted link-in-bio platform with analytics, QR codes, and themes. The open-source Linktree alternative.",
+    title,
+    description,
     metadataBase: new URL(origin),
-    authors: [
-      { name: "LinkBreeze", url: "https://linkbreeze.omnirise.dev" },
-      { name: "OmniRise", url: "https://omnirise.dev" },
-    ],
-    creator: "LinkBreeze",
-    publisher: "LinkBreeze",
-    applicationName: "LinkBreeze",
+    authors: [{ name: PRODUCT_NAME, url: origin }],
+    creator: PRODUCT_NAME,
+    publisher: PRODUCT_NAME,
+    applicationName: PRODUCT_NAME,
     icons,
     manifest: "/site.webmanifest",
     openGraph: {
-      title: "LinkBreeze — Self-hosted link-in-bio",
-      description: "The open-source Linktree alternative you own.",
-      siteName: "LinkBreeze",
+      title,
+      description,
+      siteName: PRODUCT_NAME,
       images: ["/banner.png"],
     },
     twitter: {
       card: "summary_large_image",
-      title: "LinkBreeze — Self-hosted link-in-bio",
-      description: "The open-source Linktree alternative you own.",
+      title,
+      description,
       images: ["/banner.png"],
-      site: "@OmniRise00",
-      creator: "@OmniRise00",
     },
   };
 }

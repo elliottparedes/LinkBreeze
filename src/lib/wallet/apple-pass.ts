@@ -1,5 +1,6 @@
 import { PKPass } from "passkit-generator";
 import { X509Certificate } from "node:crypto";
+import { PRODUCT_NAME } from "@/lib/brand";
 import { renderPassIcon } from "./qr-icon";
 
 /**
@@ -124,7 +125,7 @@ export async function buildApplePass(
         teamIdentifier: creds.teamId,
         serialNumber: `linkbreeze-${input.slug}-${Date.now().toString(36)}`,
         organizationName: input.title || input.slug,
-        description: `LinkBreeze card for ${input.slug}`,
+        description: `${PRODUCT_NAME} card for ${input.slug}`,
         logoText: input.title || input.slug,
         backgroundColor: toRgbString(input.backgroundColor, "rgb(26 26 46)"),
         foregroundColor: toRgbString(input.foregroundColor, "rgb(255 255 255)"),

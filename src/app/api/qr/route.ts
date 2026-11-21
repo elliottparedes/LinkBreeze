@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PRODUCT_FILE_PREFIX } from "@/lib/brand";
 import { pickRequestHost } from "@/lib/host-routing";
 import {
   generateQrSvg,
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
         : null;
 
   const downloadHeaders: Record<string, string> = download
-    ? { "Content-Disposition": `attachment; filename="linkbreeze-${slug}.svg"` }
+    ? { "Content-Disposition": `attachment; filename="${PRODUCT_FILE_PREFIX}-${slug}.svg"` }
     : {};
 
   try {
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
           "Content-Type": "image/png",
           "Cache-Control": "public, max-age=3600, s-maxage=86400",
           ...(download
-            ? { "Content-Disposition": `attachment; filename="linkbreeze-${slug}.png"` }
+            ? { "Content-Disposition": `attachment; filename="${PRODUCT_FILE_PREFIX}-${slug}.png"` }
             : {}),
         },
       });

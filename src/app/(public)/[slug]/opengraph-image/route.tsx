@@ -14,6 +14,7 @@ import {
   selectOgLinks,
 } from "@/lib/og-theme";
 import { decodeSlugParam } from "@/lib/link-slug";
+import { PRODUCT_NAME } from "@/lib/brand";
 
 export const runtime = "nodejs";
 
@@ -29,7 +30,7 @@ export const runtime = "nodejs";
  *
  * Every color derives from the theme: pills/borders are low-alpha mixes of
  * the theme TEXT color (legible on light and dark backgrounds alike),
- * accents use the theme primary. The LinkBreeze mark (top-left) is the real
+ * accents use the theme primary. The mark (top-left) is the real
  * brand asset, always rendered as-is — brand identity is not theme-recolorable.
  */
 
@@ -81,7 +82,7 @@ export async function GET(
     ? ((await getThemeById(page.themeId)) ?? (await getActiveTheme()))
     : await getActiveTheme();
 
-  const name = (page?.title || "LinkBreeze").slice(0, NAME_MAX_CHARS);
+  const name = (page?.title || PRODUCT_NAME).slice(0, NAME_MAX_CHARS);
   const bio = (page?.bio || "All my links in one place").slice(0, BIO_MAX_CHARS);
   const textColor = theme?.textColor || "#eceafe";
   const primary = theme?.primaryColor || "#533fd6";
@@ -153,7 +154,7 @@ export async function GET(
           />
         ) : null}
 
-        {/* Brand: real mark top-left, wordmark top-right (banner color split) */}
+        {/* Product mark and name */}
         {brandMark ? (
           <img
             src={brandMark}
@@ -175,7 +176,7 @@ export async function GET(
             color: textColor,
           }}
         >
-          Link<span style={{ display: "flex", color: primary }}>Breeze</span>
+          {PRODUCT_NAME}
         </div>
 
         {/* Poster identity */}

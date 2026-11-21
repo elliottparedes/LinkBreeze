@@ -15,7 +15,7 @@ describe("PWA manifest (public/site.webmanifest)", () => {
   ) as Record<string, unknown>;
 
   it("has name and short_name (<=12 chars for launcher)", () => {
-    expect(manifest.name).toBe("LinkBreeze");
+    expect(manifest.name).toBe("LinkQuilt");
     expect(typeof manifest.short_name).toBe("string");
     expect((manifest.short_name as string).length).toBeLessThanOrEqual(12);
   });

@@ -3,19 +3,15 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LogOut, ChevronLeft, CircleArrowUp } from "lucide-react";
+import { LogOut, ChevronLeft } from "lucide-react";
 import { logout } from "@/server/actions/auth";
 import { clearAllLinkDrafts } from "@/lib/link-drafts";
+import { PRODUCT_NAME } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { PageSwitcher } from "@/components/admin/PageSwitcher";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-
-export interface SidebarUpdateStatus {
-  hasUpdate: boolean;
-  latestVersion: string | null;
-}
 
 export type SidebarPage = {
   id: number;
@@ -61,7 +57,7 @@ function setRailStored(next: boolean) {
 }
 
 /** Client shell for the desktop admin sidebar (md+): brand + collapse
- *  toggle, nav, Pages section, update chip, user footer. Collapsed mode is
+ *  toggle, nav, Pages section, and user footer. Collapsed mode is
  *  the Frappe-style icon rail — labels hide, nav items tooltip via title,
  *  Pages section folds away — and the choice persists in localStorage
  *  (read post-hydration so SSR stays deterministic). */
@@ -71,17 +67,14 @@ export function AdminSidebar({
   canManageAccounts,
   canManageInstance,
   showPages,
-  update,
 }: {
   username: string;
   pages: SidebarPage[];
   canManageAccounts: boolean;
   canManageInstance: boolean;
   showPages: boolean;
-  update: SidebarUpdateStatus;
 }) {
   const t = useTranslations("shell");
-  const tUpdate = useTranslations("update");
 
   const rail = React.useSyncExternalStore(
     subscribeRail,
@@ -106,17 +99,18 @@ export function AdminSidebar({
           rail ? "flex-col gap-3 py-4" : "mb-6 gap-2 px-2",
         )}
       >
-        <a
-          href="https://linkbreeze.omnirise.dev/"
+        <Link
+          href="/"
+          prefetch={false}
           target="_blank"
           rel="noopener noreferrer"
           title={t("visitSite")}
           aria-label={t("visitSite")}
           className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80"
         >
-          <Image src="/logo-mark.svg" alt="LinkBreeze" width={24} height={24} unoptimized />
-          {!rail && <span className="font-heading text-lg font-semibold">LinkBreeze</span>}
-        </a>
+          <Image src="/logo-mark.svg" alt="" width={24} height={24} unoptimized />
+          {!rail && <span className="font-heading text-lg font-semibold">{PRODUCT_NAME}</span>}
+        </Link>
         <button
           type="button"
           onClick={toggleRail}
@@ -153,23 +147,6 @@ export function AdminSidebar({
           rail ? "gap-2 px-2 pb-4" : "gap-2",
         )}
       >
-        {update.hasUpdate && update.latestVersion && (
-          <Link
-            href="/settings#data"
-            title={tUpdate("available", { version: update.latestVersion })}
-            className={cn(
-              "flex w-full items-center gap-2 rounded-lg border border-lavender/25 bg-violet/10 px-2.5 py-2 text-lavender-soft transition-colors hover:bg-violet/20",
-              rail && "justify-center border-0 bg-transparent px-0",
-            )}
-          >
-            <CircleArrowUp className="size-4 shrink-0 text-lavender" />
-            {!rail && (
-              <span className="truncate text-xs">
-                {tUpdate("available", { version: update.latestVersion })}
-              </span>
-            )}
-          </Link>
-        )}
         {!rail && (
           <span className="px-2.5 text-xs text-muted-foreground">
             {t.rich("signedInAs", {

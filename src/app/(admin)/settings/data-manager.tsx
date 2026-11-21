@@ -12,7 +12,6 @@ import {
   clearAnalytics,
   setRetention,
 } from "@/server/actions/data";
-import { toggleUpdateCheck } from "@/server/actions/update-check";
 import { setAbAutoPromote } from "@/server/actions/links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,11 +34,9 @@ import {
 
 export function DataManager({
   retentionDays,
-  updateCheckEnabled,
   abAutoPromoteEnabled,
 }: {
   retentionDays: string;
-  updateCheckEnabled: boolean;
   /** #81 E.1: global auto-promotion for significant A/B tests (default off). */
   abAutoPromoteEnabled: boolean;
 }) {
@@ -186,31 +183,7 @@ export function DataManager({
           ) : null}
         </form>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
-          <div>
-            <p className="text-sm font-medium">{t("updateNotifications")}</p>
-            <p className="text-xs text-muted-foreground">{t("checkReleases")}</p>
-          </div>
-          <label htmlFor="update-check" className="relative inline-flex cursor-pointer items-center">
-            <input
-              id="update-check"
-              type="checkbox"
-              role="switch"
-              aria-label={t("updateNotifications")}
-              className="peer sr-only"
-              defaultChecked={updateCheckEnabled}
-              onChange={async (e) => {
-                await toggleUpdateCheck(e.target.checked);
-                router.refresh();
-              }}
-            />
-            <div className="peer h-5 w-9 rounded-full bg-muted transition-colors after:absolute after:left-[2px] after:top-[2px] after:size-4 after:rounded-full after:bg-foreground after:transition-transform peer-checked:bg-primary peer-checked:after:translate-x-4" />
-          </label>
-        </div>
-
-        {/* #81 E.1: auto-promotion of significant A/B tests (settings KV,
-            default OFF — opted-in automation only). Same switch pattern as
-            update notifications above. */}
+        {/* #81 E.1: opt-in auto-promotion of significant A/B tests. */}
         <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
           <div>
             <p className="text-sm font-medium">{t("abAutoPromote")}</p>

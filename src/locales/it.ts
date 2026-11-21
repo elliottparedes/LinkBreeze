@@ -1,14 +1,14 @@
 /**
  * Italiano — locale admin UI.
  *
- * lastSyncedHash: 126c21776e2b ← rigenerato da `npm run i18n:check -- --update`
+ * lastSyncedHash: 175f8e55b795 ← rigenerato da `npm run i18n:check -- --update`
  * (mismatch = source inglese modificato, risincronizzare questo file)
  */
 import type { Messages } from "./en";
 
 const it: Messages = {
   meta: {
-    adminTitle: "LinkBreeze — Admin",
+    adminTitle: "LinkQuilt — Admin",
     // `machine` finché un revisore madrelingua non approva; il selettore mostra un marker beta.
     status: "reviewed" as const,
   },
@@ -48,16 +48,16 @@ const it: Messages = {
     signedInAs: "Accesso effettuato come <b>{name}</b>",
     signOut: "Esci",
     pagesSection: "Pagine",
-    visitSite: "Visita linkbreeze.omnirise.dev",
+    visitSite: "Visita LinkQuilt",
     demoBannerLead: "Demo live.",
-    demoBannerVisit: "Visita LinkBreeze",
+    demoBannerVisit: "Visita LinkQuilt",
     demoBannerDeploy: "Distribuisci la tua istanza",
     livePreview: "Anteprima live",
   },
 
   login: {
     title: "Accedi",
-    subtitle: "Accedi per gestire la tua pagina LinkBreeze",
+    subtitle: "Accedi per gestire la tua pagina LinkQuilt",
     username: "Nome utente",
     password: "Password",
     submit: "Accedi",
@@ -103,7 +103,7 @@ const it: Messages = {
     chooseStartingPoint: "Scegli un punto di partenza. Potrai personalizzare tutto in seguito.",
 
     importYourExistingPage: "Importa la tua pagina esistente",
-    welcomeTitle: "Benvenuto in LinkBreeze",
+    welcomeTitle: "Benvenuto in LinkQuilt",
     createAdminTitle: "Crea il tuo account admin",
     createAccount: "Crea account",
     creatingAccount: "Creazione dell'account…",
@@ -989,7 +989,6 @@ const it: Messages = {
 
       retentionHint: "Le analitiche più vecchie vengono eliminate automaticamente. Predefinito 90 giorni — imposta 0 per conservare tutto.",
 
-      checkReleases: "Controlla le nuove versioni sulla dashboard.",
 
       restoreWarning: "Questo SOSTITUIRÀ tutti i link, il profilo, le impostazioni e i temi attuali. Questa azione non può essere annullata.",
 
@@ -1010,7 +1009,6 @@ const it: Messages = {
       description: "Esporta, esegui il backup e gestisci i tuoi dati.",
       exportCsv: "Esporta CSV",
       retentionLabel: "Conservazione analitiche (giorni)",
-      updateNotifications: "Notifiche di aggiornamento",
       abAutoPromote: "Auto-promozione dei test A/B",
       abAutoPromoteHint: "Promuovi automaticamente un vincitore significativo e archivia il test (oltre 200 clic).",
       restoreTitle: "Ripristinare il backup?",
@@ -1309,7 +1307,7 @@ const it: Messages = {
     fontStoreFailed: "Impossibile memorizzare il file del font. Controlla spazio su disco e permessi.",
     fontRestoreFailed: "Impossibile ripristinare il file del font incorporato",
     noBackupFile: "Nessun file di backup fornito",
-    invalidBackup: "Non è un backup LinkBreeze valido",
+    invalidBackup: "Non è un backup LinkQuilt valido",
     backupMalformedData: "Il backup contiene dati malformati — le righe non corrispondono allo schema previsto",
     backupMalformedSections: "Il backup contiene sezioni malformate",
     backupMalformedFonts: "Il backup contiene font personalizzati malformati",
@@ -1559,28 +1557,6 @@ const it: Messages = {
     deleteConfirm: "Rimuovere questa associazione di dominio?",
     save: "Salva",
     scope: "Ambito",
-  },
-
-  update: {
-    cardTitle: "Aggiornamenti",
-    cardDesc: "Confronta la versione installata con l'ultima release su GitHub e sul sito web.",
-    installed: "Versione installata",
-    githubLatest: "Ultima su GitHub",
-    websiteLatest: "Ultima sul sito web",
-    onLatest: "Sei all'ultima versione.",
-    updateAvailable: "Puoi aggiornare alla v{version}.",
-    recheck: "Riverifica",
-    lastChecked: "Ultimo controllo {time}",
-    statusUnknown: "Impossibile determinare l'ultima versione.",
-    checksDisabled: "I controlli automatici degli aggiornamenti sono attualmente disattivati.",
-    staleSource: "Impossibile raggiungere {source} - mostro l'ultimo valore noto da {time}.",
-    available: "LinkBreeze v{version} è disponibile",
-    running: "Stai eseguendo la v{version}",
-    viewReleaseNotes: "Vedi note di release",
-    checkAgain: "Verifica di nuovo",
-    updateCommand: "docker pull omnirise/linkbreeze:latest && docker restart linkbreeze",
-    orScript: "oppure one-shot: curl -fsSL https://linkbreeze.omnirise.dev/update.sh | sh",
-    dismiss: "Ignora la notifica di aggiornamento",
   },
 };
 

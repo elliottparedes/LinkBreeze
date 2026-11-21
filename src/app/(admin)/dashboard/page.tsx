@@ -34,11 +34,9 @@ import {
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { pickVisiblePage } from "@/lib/ownership";
-import { checkForUpdates } from "@/lib/update-check";
 import { maybeRunScheduledBackup, getBackupStatus } from "@/server/backup-scheduler";
 import { BackupFailureNotice } from "./backup-failure-notice";
 import { getCachedFaviconUrl } from "@/lib/favicon";
-import { UpdateChecker } from "@/components/admin/UpdateChecker";
 import { OnboardingChecklist } from "@/components/admin/OnboardingChecklist";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Card, CardContent } from "@/components/ui/card";
@@ -353,12 +351,11 @@ export default async function DashboardPage({
   );
   const pageId = activePage?.id;
 
-  const [stats, prevStats, links, breakdown, updateResult, activeTheme, retentionDays, linkRates, heatmap, activity, socialTaps] = await Promise.all([
+  const [stats, prevStats, links, breakdown, activeTheme, retentionDays, linkRates, heatmap, activity, socialTaps] = await Promise.all([
     getDashboardStats(range, pageId),
     getPreviousStats(range, pageId),
     getAllLinks(pageId),
     getAnalyticsBreakdown(range, pageId),
-    checkForUpdates(),
     getActiveTheme(),
     getAnalyticsRetentionDays(),
     getLinkRates(range, pageId),
@@ -399,9 +396,6 @@ export default async function DashboardPage({
 
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100dvh-3rem)]">
-      {/* Instance-level banners → instance admins only (#124). */}
-      {canManageInstance && <UpdateChecker initialResult={updateResult} />}
-
       {/* Scheduled backups failing (#83) — dismissible, re-arms on next failure */}
       {canManageInstance && showBackupNotice ? <BackupFailureNotice /> : null}
 

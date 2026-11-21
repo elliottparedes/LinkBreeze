@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { csvCell } from "@/lib/csv";
+import { PRODUCT_FILE_PREFIX } from "@/lib/brand";
 import { getAllSubscribers } from "@/server/queries";
 
 export const runtime = "nodejs";
@@ -27,7 +28,7 @@ export async function GET() {
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="linkbreeze-subscribers-${today}.csv"`,
+      "Content-Disposition": `attachment; filename="${PRODUCT_FILE_PREFIX}-subscribers-${today}.csv"`,
       "Cache-Control": "no-store",
     },
   });

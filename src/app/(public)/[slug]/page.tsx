@@ -2,6 +2,7 @@ import * as React from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { PRODUCT_NAME } from "@/lib/brand";
 import {
   getPageBySlug,
   getActiveLinks,
@@ -77,7 +78,7 @@ export async function generateMetadata({
   if (!page) return { title: "Page not found" };
 
   const title =
-    page.seoTitle || page.title || "LinkBreeze";
+    page.seoTitle || page.title || PRODUCT_NAME;
   const description = page.seoDescription || page.bio || "My links";
   const origin = await getOrigin();
   const url = `${origin}/${slug}`;
@@ -117,7 +118,7 @@ export async function generateMetadata({
   // the goal, de-listing this page is.
   const hidden = (await getSetting("searchEngineHidden")) === "true";
 
-  // Build icons: use page-specific favicon if set, else default LinkBreeze icons.
+  // Use a page-specific favicon when set, otherwise use the product icons.
   let icons: Metadata["icons"] = {
     icon: [
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },

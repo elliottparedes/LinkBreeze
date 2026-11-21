@@ -16,7 +16,7 @@
 
 const en = {
   meta: {
-    adminTitle: "LinkBreeze — Admin",
+    adminTitle: "LinkQuilt — Admin",
     // `machine` until a native reviewer signs off; picker shows a beta marker.
     status: "reviewed" as const,
   },
@@ -56,16 +56,16 @@ const en = {
     signedInAs: "Signed in as <b>{name}</b>",
     signOut: "Sign out",
     pagesSection: "Pages",
-    visitSite: "Visit linkbreeze.omnirise.dev",
+    visitSite: "Visit LinkQuilt",
     demoBannerLead: "Live demo.",
-    demoBannerVisit: "Visit LinkBreeze",
+    demoBannerVisit: "Visit LinkQuilt",
     demoBannerDeploy: "Deploy your own instance",
     livePreview: "Live preview",
   },
 
   login: {
     title: "Sign in",
-    subtitle: "Sign in to manage your LinkBreeze page",
+    subtitle: "Sign in to manage your LinkQuilt page",
     username: "Username",
     password: "Password",
     submit: "Sign in",
@@ -111,7 +111,7 @@ const en = {
     chooseStartingPoint: "Choose a starting point. Customize everything later.",
 
     importYourExistingPage: "Import your existing page",
-    welcomeTitle: "Welcome to LinkBreeze",
+    welcomeTitle: "Welcome to LinkQuilt",
     createAdminTitle: "Create your admin account",
     createAccount: "Create account",
     creatingAccount: "Creating account…",
@@ -997,7 +997,6 @@ const en = {
 
       retentionHint: "Older analytics are pruned automatically. Defaults to 90 days — set 0 to keep everything.",
 
-      checkReleases: "Check for new releases on the dashboard.",
 
       restoreWarning: "This will REPLACE all current links, profile, settings and themes. This cannot be undone.",
 
@@ -1018,7 +1017,6 @@ const en = {
       description: "Export, backup and manage your data.",
       exportCsv: "Export CSV",
       retentionLabel: "Analytics retention (days)",
-      updateNotifications: "Update notifications",
       abAutoPromote: "A/B test auto-promotion",
       abAutoPromoteHint: "Automatically promote a significant winner and archive the test (200+ clicks).",
       restoreTitle: "Restore backup?",
@@ -1317,7 +1315,7 @@ const en = {
     fontStoreFailed: "Could not store the font file. Check disk space and permissions.",
     fontRestoreFailed: "Could not restore the embedded font file",
     noBackupFile: "No backup file provided",
-    invalidBackup: "Not a valid LinkBreeze backup",
+    invalidBackup: "Not a valid LinkQuilt backup",
     backupMalformedData: "Backup contains malformed data — rows do not match the expected schema",
     backupMalformedSections: "Backup contains malformed sections",
     backupMalformedFonts: "Backup contains malformed custom fonts",
@@ -1570,28 +1568,6 @@ const en = {
     deleteConfirm: "Remove this domain binding?",
     save: "Save",
     scope: "Scope",
-  },
-
-  update: {
-    cardTitle: "Updates",
-    cardDesc: "Check your installed version against the latest release on GitHub and the website.",
-    installed: "Installed version",
-    githubLatest: "Latest on GitHub",
-    websiteLatest: "Latest on the website",
-    onLatest: "You're on the latest version.",
-    updateAvailable: "You can update to v{version}.",
-    recheck: "Recheck",
-    lastChecked: "Last checked {time}",
-    statusUnknown: "The latest version could not be determined.",
-    checksDisabled: "Automatic update checks are currently turned off.",
-    staleSource: "Couldn't reach {source} - showing the last known value from {time}.",
-    available: "LinkBreeze v{version} is available",
-    running: "You're running v{version}",
-    viewReleaseNotes: "View release notes",
-    checkAgain: "Check again",
-    updateCommand: "docker pull omnirise/linkbreeze:latest && docker restart linkbreeze",
-    orScript: "or one-shot: curl -fsSL https://linkbreeze.omnirise.dev/update.sh | sh",
-    dismiss: "Dismiss update notification",
   },
 };
 

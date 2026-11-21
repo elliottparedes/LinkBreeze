@@ -1,6 +1,6 @@
 <svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg">
   <!--
-    LinkBreeze GitHub Banner — 1280x640
+    LinkQuilt social preview — 1280x640
     Layout: Logo mark (left) + wordmark + tagline + feature pills
     Background: #0f0c29 with subtle radial depth and dot pattern
   -->
@@ -97,95 +97,83 @@
   </g>
 
   <!-- ════════════════════════════════════════════════
-       WORDMARK — "LinkBreeze"
+       WORDMARK — "LinkQuilt"
        ════════════════════════════════════════════════ -->
   <text x="560" y="240"
-        font-family="Space Grotesk, Inter, sans-serif"
+        font-family="Arial, sans-serif"
         font-size="64" font-weight="700"
         fill="url(#textGrad)"
         letter-spacing="-2">
-    Link<tspan fill="#a78bfa">Breeze</tspan>
+    Link<tspan fill="#a78bfa">Quilt</tspan>
   </text>
 
   <!-- ════════════════════════════════════════════════
        TAGLINE
        ════════════════════════════════════════════════ -->
   <text x="560" y="295"
-        font-family="Inter, sans-serif"
+        font-family="Arial, sans-serif"
         font-size="22" font-weight="400"
         fill="#94a3b8"
         letter-spacing="0.3">
-    Self-hosted link-in-bio. The Linktree alternative you own.
+    Your links, together on a page you make your own.
   </text>
 
   <!-- ════════════════════════════════════════════════
        FEATURE PILLS
        ════════════════════════════════════════════════ -->
-  <!-- Pill 1: Self-Hosted -->
+  <!-- Pill 1: Custom pages -->
   <rect x="560" y="340" width="160" height="42" rx="21"
         fill="none" stroke="#533fd6" stroke-width="1.5" opacity="0.7"/>
   <text x="640" y="367"
-        font-family="Inter, sans-serif"
+        font-family="Arial, sans-serif"
         font-size="15" font-weight="500"
         fill="#c4b5fd"
         text-anchor="middle">
-    🔒 Self-Hosted
+    Custom pages
   </text>
 
   <!-- Pill 2: Analytics -->
   <rect x="735" y="340" width="145" height="42" rx="21"
         fill="none" stroke="#533fd6" stroke-width="1.5" opacity="0.7"/>
   <text x="807" y="367"
-        font-family="Inter, sans-serif"
+        font-family="Arial, sans-serif"
         font-size="15" font-weight="500"
         fill="#c4b5fd"
         text-anchor="middle">
-    📊 Analytics
+    Analytics
   </text>
 
   <!-- Pill 3: QR Codes -->
   <rect x="895" y="340" width="140" height="42" rx="21"
         fill="none" stroke="#533fd6" stroke-width="1.5" opacity="0.7"/>
   <text x="965" y="367"
-        font-family="Inter, sans-serif"
+        font-family="Arial, sans-serif"
         font-size="15" font-weight="500"
         fill="#c4b5fd"
         text-anchor="middle">
-    📱 QR Codes
+    QR Codes
   </text>
 
   <!-- Pill 4: Themes -->
   <rect x="1050" y="340" width="125" height="42" rx="21"
         fill="none" stroke="#533fd6" stroke-width="1.5" opacity="0.7"/>
   <text x="1112" y="367"
-        font-family="Inter, sans-serif"
+        font-family="Arial, sans-serif"
         font-size="15" font-weight="500"
         fill="#c4b5fd"
         text-anchor="middle">
-    🎨 Themes
+    Themes
   </text>
 
   <!-- ════════════════════════════════════════════════
        FOOTER — tech badges
        ════════════════════════════════════════════════ -->
   <text x="560" y="510"
-        font-family="Inter, monospace"
+        font-family="Arial, sans-serif"
         font-size="14" font-weight="400"
         fill="#475569"
         letter-spacing="1">
     Next.js · SQLite · Docker · TypeScript · MIT License
   </text>
 
-  <!-- ════════════════════════════════════════════════
-       OmniRise badge — bottom right corner
-       ════════════════════════════════════════════════ -->
-  <rect x="1100" y="570" width="160" height="36" rx="18"
-        fill="#533fd6" opacity="0.15"/>
-  <text x="1180" y="594"
-        font-family="Inter, sans-serif"
-        font-size="13" font-weight="500"
-        fill="#a78bfa"
-        text-anchor="middle">
-    An OmniRise Project
-  </text>
 </svg>

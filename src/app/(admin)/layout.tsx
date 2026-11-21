@@ -1,7 +1,9 @@
 import * as React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { NextIntlClientProvider } from "next-intl";
 import { getSession } from "@/lib/auth";
+import { PRODUCT_NAME } from "@/lib/brand";
 import { isDemoMode } from "@/lib/demo";
 import { getAllPages } from "@/server/queries";
 import { AuroraBackground } from "@/components/aurora/AuroraBackground";
@@ -11,7 +13,6 @@ import { PageSwitcher } from "@/components/admin/PageSwitcher";
 import { getCapabilitiesForUser } from "@/server/queries";
 import { filterVisiblePages, showPageSwitcher } from "@/lib/ownership";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
-import { getUpdateStatus } from "@/lib/update-check";
 import { PreviewProvider } from "@/components/admin/PreviewPane";
 import { getLocale } from "@/i18n/server";
 import { LOCALE_HTML_LANG, localeDir } from "@/i18n/config";
@@ -73,9 +74,6 @@ export default async function AdminLayout({
     isPublished: p.isPublished,
   }));
 
-  // Update chip for the sidebar floor (24h KV-cached; quiet when disabled).
-  const updateStatus = await getUpdateStatus();
-
   return (
     <NextIntlClientProvider>
     <PreviewProvider pages={pageList}>
@@ -98,10 +96,6 @@ export default async function AdminLayout({
               canManageAccounts={capsForUser.caps.manageAccounts}
               canManageInstance={capsForUser.caps.manageInstance}
               showPages={showPages}
-              update={{
-                hasUpdate: updateStatus.hasUpdate,
-                latestVersion: updateStatus.latestVersion,
-              }}
             />
           </React.Suspense>
 
@@ -110,17 +104,18 @@ export default async function AdminLayout({
             {/* Mobile top bar */}
             <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3 md:hidden">
               <div className="flex items-center gap-2">
-                <a
-                  href="https://linkbreeze.omnirise.dev/"
+                <Link
+                  href="/"
+                  prefetch={false}
                   target="_blank"
                   rel="noopener noreferrer"
                   title={t("visitSite")}
                   aria-label={t("visitSite")}
                   className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80"
                 >
-                  <Image src="/logo-mark.svg" alt="LinkBreeze" width={24} height={24} unoptimized />
-                  <span className="font-heading font-semibold">LinkBreeze</span>
-                </a>
+                  <Image src="/logo-mark.svg" alt="" width={24} height={24} unoptimized />
+                  <span className="font-heading font-semibold">{PRODUCT_NAME}</span>
+                </Link>
               </div>
               <div className="flex items-center gap-2">
                 {showPages ? (
@@ -145,11 +140,11 @@ export default async function AdminLayout({
                 {isDemoMode && (
                   <div className="mb-4 shrink-0 rounded-lg border border-violet/30 bg-violet/10 px-4 py-3 text-sm text-lavender">
                     <strong>{t("demoBannerLead")}</strong>{" "}
-                    <a href="https://linkbreeze.omnirise.dev/" className="underline hover:text-foreground" target="_blank" rel="noopener noreferrer">
+                    <Link href="/" prefetch={false} className="underline hover:text-foreground" target="_blank" rel="noopener noreferrer">
                       {t("demoBannerVisit")}
-                    </a>
+                    </Link>
                     {" · "}
-                    <a href="https://github.com/Manak-hash/LinkBreeze" className="underline hover:text-foreground" target="_blank" rel="noopener noreferrer">
+                    <a href="https://github.com/elliottparedes/LinkBreeze" className="underline hover:text-foreground" target="_blank" rel="noopener noreferrer">
                       {t("demoBannerDeploy")}
                     </a>
                   </div>

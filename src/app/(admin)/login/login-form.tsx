@@ -6,6 +6,7 @@ import { login } from "@/server/actions/auth";
 import { startOidcLoginAction } from "@/server/actions/oidc";
 import { LanguageDropdown } from "@/components/language-dropdown";
 import type { ActionResult } from "@/lib/errors";
+import { PRODUCT_NAME } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -122,7 +123,7 @@ export function LoginForm({
       <div className="w-full max-w-sm">
         <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
-          <Image src="/logo-mark.svg" alt="LinkBreeze" width={48} height={48} unoptimized className="mx-auto mb-2" />
+          <Image src="/logo-mark.svg" alt={PRODUCT_NAME} width={48} height={48} unoptimized className="mx-auto mb-2" />
           <CardTitle className="text-xl">{t("welcomeBack")}</CardTitle>
           <CardDescription>{t("subtitle")}</CardDescription>
         </CardHeader>

@@ -2,6 +2,7 @@ import "server-only";
 import * as crypto from "crypto";
 import { TOTP, Secret } from "otpauth";
 import * as bcrypt from "bcryptjs";
+import { PRODUCT_NAME } from "./brand";
 
 /**
  * TOTP 2FA core — pure functions, NO next/headers imports (testable in vitest
@@ -67,7 +68,7 @@ export function decryptSecret(stored: string): string | null {
 // ─── TOTP instance helpers ───────────────────────────────────────────────
 
 const TOTP_OPTS = {
-  issuer: "LinkBreeze",
+  issuer: PRODUCT_NAME,
   algorithm: "SHA1" as const, // authenticator-app default (Google Authenticator)
   digits: 6,
   period: 30,
@@ -90,7 +91,8 @@ export function verifyTotp(secretBase32: string, token: string): boolean {
 
 /** otpauth:// URI for the QR code (label = admin username). */
 export function otpauthUri(secretBase32: string, username: string): string {
-  return `otpauth://totp/LinkBreeze:${encodeURIComponent(username)}?issuer=LinkBreeze&secret=${secretBase32}&algorithm=SHA1&digits=6&period=30`;
+  const issuer = encodeURIComponent(TOTP_OPTS.issuer);
+  return `otpauth://totp/${issuer}:${encodeURIComponent(username)}?issuer=${issuer}&secret=${secretBase32}&algorithm=SHA1&digits=6&period=30`;
 }
 
 // ─── Recovery codes ──────────────────────────────────────────────────────

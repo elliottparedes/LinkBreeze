@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { localizeActionError } from "@/lib/action-error-i18n";
+import { PRODUCT_NAME } from "@/lib/brand";
 import { signupAction } from "@/server/actions/signup";
 
 export function SignupForm() {
@@ -50,7 +51,7 @@ export function SignupForm() {
       <div className="w-full max-w-sm">
         <Card className="w-full max-w-sm">
           <CardHeader className="items-center text-center">
-            <Image src="/logo-mark.svg" alt="LinkBreeze" width={48} height={48} unoptimized className="mx-auto mb-2" />
+            <Image src="/logo-mark.svg" alt={PRODUCT_NAME} width={48} height={48} unoptimized className="mx-auto mb-2" />
             <CardTitle className="text-xl">{t("title")}</CardTitle>
             <CardDescription>{t("subtitle")}</CardDescription>
           </CardHeader>

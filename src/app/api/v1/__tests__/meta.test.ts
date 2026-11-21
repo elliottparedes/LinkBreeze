@@ -80,7 +80,7 @@ describe("GET /api/v1/docs", () => {
     expect(res.headers.get("content-type")).toContain("text/html");
     const html = await res.text();
     expect(html).toContain("/api/v1/links");
-    expect(html).toContain("LinkBreeze API");
+    expect(html).toContain("LinkQuilt API");
     expect(html).toContain("noindex");
   });
 

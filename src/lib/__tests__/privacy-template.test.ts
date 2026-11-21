@@ -111,7 +111,7 @@ describe("generatePrivacyPolicy", () => {
     expect(policy).toContain("privacy@example.com");
   });
 
-  it("includes data controller section", () => {
+  it("identifies the platform and directs questions to the page owner", () => {
     const policy = generatePrivacyPolicy({
       displayName: "Test",
       slug: "test",
@@ -121,8 +121,9 @@ describe("generatePrivacyPolicy", () => {
       hasExternalAnalytics: false,
       analyticsRetentionDays: 0,
     });
-    expect(policy).toContain("## Data Controller");
-    expect(policy).toContain("LinkBreeze");
+    expect(policy).toContain("## Hosting");
+    expect(policy).toContain("This page is powered by LinkQuilt");
+    expect(policy).toContain("Contact the page owner");
   });
 
   it("includes children's privacy section", () => {
