@@ -1,0 +1,17 @@
+# Dokploy builds this checkout and configures HTTPS through its Domains tab.
+services:
+  linkbreeze:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "3000"
+    environment:
+      BASE_URL: ${BASE_URL:?Set BASE_URL in Dokploy to your public HTTPS URL}
+      SECRET_KEY: ${SECRET_KEY:-}
+    volumes:
+      - linkbreeze-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  linkbreeze-data:
